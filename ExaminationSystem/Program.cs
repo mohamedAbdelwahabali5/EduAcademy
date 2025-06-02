@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using MudBlazor.Services;
 
 namespace ExaminationSystem
 {
@@ -51,6 +52,9 @@ namespace ExaminationSystem
 
             builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
             builder.Services.AddHttpContextAccessor(); // لاستخدام IHttpContextAccessor
+
+            // Add MudBlazor services.
+            builder.Services.AddMudServices();
 
             var app = builder.Build();
 

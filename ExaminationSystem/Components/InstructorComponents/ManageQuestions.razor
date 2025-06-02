@@ -279,6 +279,8 @@
         {
             Context.Questions.Remove(question);
             await Context.SaveChangesAsync();
+            Snackbar.Add("Question deleted successful", Severity.Success);
+
             Questions = await Context.Questions
                 .Include(q => q.Course)
                 .Include(q => q.Choices)

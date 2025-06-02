@@ -3,8 +3,11 @@
 @inject NavigationManager NavigationManager
 
 <div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">ExaminationSystem</a>
+    <div class="d-flex">
+        <a class="navbar-brand" href="/">
+            <img src="https://res.cloudinary.com/dojq1nxqw/image/upload/v1748893939/eduacademy_cpyjcb.png" alt="Logo" width="40" height="40" style="border-radius: 50%;" class="me-1">
+            EduAcademy
+        </a>
     </div>
 </div>
 
@@ -25,14 +28,14 @@
             </NavLink>
         </div> *@
 
-
+        
       
 
         <AuthorizeView Roles="Instructor">
             <Authorized>
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="add-course">
-                        <i class=" bi-plus-square-fill-nav-menu fs-1"></i>
+                        <i class="bi bi-plus-square"></i>
                         Add New Course
                     </NavLink>
                 </div>
@@ -114,6 +117,12 @@
                 </div>
             </NotAuthorized>
         </AuthorizeView>
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="/about">
+                <span class="bi bi-info-circle" aria-hidden="true"></span> About
+            </NavLink>
+        </div>
     </nav>
 </div>
 

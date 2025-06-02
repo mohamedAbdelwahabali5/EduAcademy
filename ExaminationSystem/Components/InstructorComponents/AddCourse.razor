@@ -278,6 +278,7 @@
         Course.CreatedAt = DateTime.Now; // Ensure CreatedAt is set
         Context.Courses.Add(Course);
         await Context.SaveChangesAsync();
+        Snackbar.Add("Course added successful", Severity.Success);
         Course = new Course(); 
         NavigationManager.NavigateTo("/manage-courses");
     }
