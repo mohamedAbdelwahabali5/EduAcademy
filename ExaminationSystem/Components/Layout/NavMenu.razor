@@ -32,67 +32,63 @@
             <Authorized>
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="add-course">
-                        <span class="bi bi-book"></span>
+                        <i class=" bi-plus-square-fill-nav-menu fs-1"></i>
                         Add New Course
                     </NavLink>
                 </div>
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="manage-courses">
-                        <span class="bi bi-file"></span>
+                        <i class="bi bi-folder2-open"></i> 
                         Manage Courses
                     </NavLink>
                 </div>
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="create-exam">
-                        <span class="bi bi-plus"></span>
+                        <i class="bi bi-file-earmark-plus"></i> 
                         Create Exam
                     </NavLink>
                 </div>
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="add-question">
-                        <span class="bi bi-question-circle"></span>
+                        <i class="bi bi-question-circle"></i> 
                         Add Questions
                     </NavLink>
                 </div>
             </Authorized>
         </AuthorizeView>
 
-        
+
+
 
         <AuthorizeView Roles="Student">
             <Authorized>
                 <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="student-exams">
-                        <span class="bi bi-file"></span>
-                        View Exams
-                    </NavLink>
-                </div>
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="take-exam">
-                        <span class="bi bi-pencil-square"></span>
-                        Take Exam
+                    <NavLink class="nav-link" href="student-dashboard">
+                        <i class="bi bi-speedometer2"></i> 
+                        Dashboard
                     </NavLink>
                 </div>
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="enroll-courses">
-                        <span class="bi bi-plus"></span>
+                        <i class="bi bi-journal-plus"></i> 
                         Enroll in Courses
                     </NavLink>
                 </div>
                 <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="student-dashboard">
-                        <span class="bi bi-speedometer2"></span>
-                        Dashboard
+                    <NavLink class="nav-link" href="student-exams">
+                        <i class="bi bi-file-earmark-text"></i> 
+                        View Exams
                     </NavLink>
                 </div>
             </Authorized>
         </AuthorizeView>
 
+
         <AuthorizeView>
             <Authorized>
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="Account/Manage">
-                        <span class="bi bi-person-fill-nav-menu" aria-hidden="true"></span> @context.User.Identity?.Name
+                        <span class="bi bi-person-fill-nav-menu" aria-hidden="true"></span> Profile
                     </NavLink>
                 </div>
                 <div class="nav-item px-3">
@@ -121,6 +117,22 @@
     </nav>
 </div>
 
+
+<style>
+    /* .nav-link i {
+        font-size: 1.5rem; 
+        text-align: center;
+    } */
+    .bi{
+        font-size: 1.5rem;
+        vertical-align: auto !important;
+    }
+
+    .nav-item .nav-link {
+        line-height: 1rem !important;
+    }
+    
+</style>
 @code {
     private string? currentUrl;
 
