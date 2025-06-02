@@ -1,0 +1,359 @@
+﻿@page "/register"
+@inject UserManager<ApplicationUser> UserManager
+@inject NavigationManager NavigationManager
+
+<div class="register-container">
+    <div class="register-card">
+        <div class="register-header">
+            <h3 class="register-title">Create Account</h3>
+            <p class="register-subtitle">Join our learning platform</p>
+        </div>
+
+        <EditForm Model="Model" OnValidSubmit="HandleRegister" class="register-form">
+            <DataAnnotationsValidator />
+            <ValidationSummary class="validation-summary" />
+
+            <div class="form-group">
+                <label class="form-label">
+                    <i class="icon-email"></i>
+                    Email Address
+                </label>
+                <div class="input-wrapper">
+                    <InputText @bind-Value="Model.Email" class="form-input" placeholder="Enter your email" />
+                    <ValidationMessage For="() => Model.Email" class="validation-error" />
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">
+                    <i class="icon-lock"></i>
+                    Password
+                </label>
+                <div class="input-wrapper">
+                    <InputText type="password" @bind-Value="Model.Password" class="form-input" placeholder="Create a password" />
+                    <ValidationMessage For="() => Model.Password" class="validation-error" />
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">
+                    <i class="icon-user"></i>
+                    Full Name
+                </label>
+                <div class="input-wrapper">
+                    <InputText @bind-Value="Model.FullName" class="form-input" placeholder="Enter your full name" />
+                    <ValidationMessage For="() => Model.FullName" class="validation-error" />
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">
+                    <i class="icon-role"></i>
+                    Account Type
+                </label>
+                <div class="input-wrapper">
+                    <InputSelect @bind-Value="Model.UserType" class="form-select">
+                        <option value="">Select your role</option>
+                        <option value="Instructor">Instructor</option>
+                        <option value="Student">Student</option>
+                    </InputSelect>
+                </div>
+            </div>
+
+            <div class="form-group conditional-field" style="@(Model.UserType == "Instructor" ? "display: block;" : "display: none;")">
+                <label class="form-label">
+                    <i class="icon-specialization"></i>
+                    Specialization
+                </label>
+                <div class="input-wrapper">
+                    <InputText @bind-Value="Model.Specialization" class="form-input" placeholder="Your area of expertise" />
+                </div>
+            </div>
+
+            <div class="form-group conditional-field" style="@(Model.UserType == "Student" ? "display: block;" : "display: none;")">
+                <label class="form-label">
+                    <i class="icon-id"></i>
+                    Student ID
+                </label>
+                <div class="input-wrapper">
+                    <InputText @bind-Value="Model.StudentIdNumber" class="form-input" placeholder="Enter your student ID" />
+                </div>
+            </div>
+
+            <button type="submit" class="register-button">
+                <span class="button-text">Create Account</span>
+                <i class="icon-arrow"></i>
+            </button>
+        </EditForm>
+
+        <div class="register-footer">
+            <p>Already have an account? <a href="Account/login" class="login-link">Sign in here</a></p>
+        </div>
+    </div>
+</div>
+
+<style>
+    .register-container {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #FFF 0%, #764ba2 100%);
+        padding: 20px;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .register-card {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        padding: 40px;
+        width: 100%;
+        max-width: 500px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .register-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 5px;
+        background: linear-gradient(90deg, #667eea, #764ba2);
+    }
+
+    .register-header {
+        text-align: center;
+        margin-bottom: 40px;
+    }
+
+    .register-title {
+        font-size: 32px;
+        font-weight: 700;
+        color: #2d3748;
+        margin: 0 0 10px 0;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .register-subtitle {
+        color: #718096;
+        font-size: 16px;
+        margin: 0;
+    }
+
+    .register-form {
+        display: flex;
+        flex-direction: column;
+        gap: 25px;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .conditional-field {
+        transition: all 0.3s ease;
+        overflow: hidden;
+    }
+
+    .form-label {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 600;
+        color: #4a5568;
+        margin-bottom: 8px;
+        font-size: 14px;
+    }
+
+    .input-wrapper {
+        position: relative;
+    }
+
+    .form-input, .form-select {
+        width: 100%;
+        padding: 16px 20px;
+        border: 2px solid #e2e8f0;
+        border-radius: 12px;
+        font-size: 16px;
+        transition: all 0.3s ease;
+        background: #f8fafc;
+        color: #2d3748;
+        box-sizing: border-box;
+    }
+
+    .form-input:focus, .form-select:focus {
+        outline: none;
+        border-color: #667eea;
+        background: white;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        transform: translateY(-2px);
+    }
+
+    .form-input::placeholder {
+        color: #a0aec0;
+    }
+
+    .form-select {
+        cursor: pointer;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+        background-position: right 12px center;
+        background-repeat: no-repeat;
+        background-size: 16px;
+        padding-right: 45px;
+    }
+
+    .validation-error {
+        color: #e53e3e;
+        font-size: 12px;
+        margin-top: 5px;
+        padding-left: 5px;
+        font-weight: 500;
+    }
+
+    .validation-summary {
+        background: #fed7d7;
+        border: 1px solid #feb2b2;
+        border-radius: 8px;
+        padding: 12px;
+        margin-bottom: 20px;
+        color: #c53030;
+    }
+
+    .register-button {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        border-radius: 12px;
+        padding: 18px 30px;
+        font-size: 16px;
+        font-weight: 600;
+        color: white;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        margin-top: 10px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .register-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+    }
+
+    .register-button:active {
+        transform: translateY(0);
+    }
+
+    .register-button::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        transition: left 0.5s;
+    }
+
+    .register-button:hover::before {
+        left: 100%;
+    }
+
+    .button-text {
+        position: relative;
+        z-index: 1;
+    }
+
+    .register-footer {
+        text-align: center;
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 1px solid #e2e8f0;
+    }
+
+    .register-footer p {
+        color: #718096;
+        margin: 0;
+    }
+
+    .login-link {
+        color: #667eea;
+        text-decoration: none;
+        font-weight: 600;
+        transition: color 0.3s ease;
+    }
+
+    .login-link:hover {
+        color: #764ba2;
+        text-decoration: underline;
+    }
+
+    /* Icon styles using CSS shapes */
+    .icon-email::before { content: '✉'; }
+    .icon-lock::before { content: '🔒'; }
+    .icon-user::before { content: '👤'; }
+    .icon-role::before { content: '👥'; }
+    .icon-specialization::before { content: '🎓'; }
+    .icon-id::before { content: '🆔'; }
+    .icon-arrow::before { content: '→'; }
+
+    
+
+    /* Animation for conditional fields */
+    .conditional-field[style*="display: block"] {
+        animation: slideDown 0.3s ease-out;
+    }
+
+   
+</style>
+
+@code {
+    private RegisterModel Model = new RegisterModel();
+
+    private class RegisterModel
+    {
+        public string Email { get; set; }
+        public string Password { get; set; }
+        public string FullName { get; set; }
+        public string UserType { get; set; }
+        public string? Specialization { get; set; }
+        public string? StudentIdNumber { get; set; }
+    }
+
+    private async Task HandleRegister()
+    {
+        var user = new ApplicationUser
+        {
+            UserName = Model.Email,
+            Email = Model.Email,
+            FullName = Model.FullName,
+            Specialization = Model.UserType == "Instructor" ? Model.Specialization : null,
+            StudentIdNumber = Model.UserType == "Student" ? Model.StudentIdNumber : null
+        };
+
+        var result = await UserManager.CreateAsync(user, Model.Password);
+        if (result.Succeeded)
+        {
+            await UserManager.AddToRoleAsync(user, Model.UserType);
+            NavigationManager.NavigateTo("Account/login");
+        }
+        else
+        {
+            foreach (var error in result.Errors)
+            {
+                // Log or display error.Description
+            }
+        }
+    }
+}

@@ -1,0 +1,332 @@
+﻿@page "/student-exams"
+
+@attribute [Authorize(Roles = "Student")]
+@inject UserManager<ApplicationUser> UserManager
+@inject IHttpContextAccessor HttpContextAccessor
+@inject ApplicationDbContext Context
+@inject NavigationManager NavigationManager
+
+<PageTitle>Available Exams</PageTitle>
+
+<div class="student-exams-container">
+    <div class="student-exams-card">
+        <div class="student-exams-header">
+            <h3 class="student-exams-title">Available Exams</h3>
+            <p class="student-exams-subtitle">View and take exams for your enrolled courses</p>
+        </div>
+
+        @if (Courses == null || !Courses.Any())
+        {
+            <div class="no-courses">
+                <p>You are not enrolled in any courses. Enroll in courses to view exams.</p>
+                <a href="/enroll-courses" class="action-button">
+                    <span>Enroll in Courses</span>
+                    <i class="icon-arrow"></i>
+                </a>
+            </div>
+        }
+        else
+        {
+            <div class="courses-list">
+                @foreach (var course in Courses)
+                {
+                    <div class="course-item">
+                        <div class="course-info">
+                            <h4 class="course-name">@course.Name</h4>
+                            <p class="course-description">@(course.Description.Length > 100 ? course.Description.Substring(0, 100) + "..." : course.Description)</p>
+                        </div>
+                        @if (course.Exams != null && course.Exams.Any())
+                        {
+                            <div class="exams-section">
+                                <h5 class="exams-title">Exams:</h5>
+                                @foreach (var exam in course.Exams)
+                                {
+                                    <div class="exam-item">
+                                        <span class="exam-name">@exam.Name</span>
+                                        @if (exam.HasTaken)
+                                        {
+                                            <span class="taken-label">Taken</span>
+                                        }
+                                        else
+                                        {
+                                            <button class="action-button take-exam-button" @onclick="() => TakeExam(exam.Id)">
+                                                <i class="icon-exam"></i> Take Exam
+                                            </button>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="no-exams">
+                                <p>No exams available for this course.</p>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    .student-exams-container {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #FFF 0%, #764ba2 100%);
+        padding: 20px;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .student-exams-card {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        padding: 40px;
+        width: 100%;
+        max-width: 800px;
+        position: relative;
+        overflow: hidden;
+    }
+
+        .student-exams-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+        }
+
+    .student-exams-header {
+        text-align: center;
+        margin-bottom: 40px;
+    }
+
+    .student-exams-title {
+        font-size: 32px;
+        font-weight: 700;
+        color: #2d3748;
+        margin: 0 0 10px 0;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .student-exams-subtitle {
+        color: #718096;
+        font-size: 16px;
+        margin: 0;
+    }
+
+    .no-courses {
+        text-align: center;
+        padding: 20px;
+    }
+
+        .no-courses p {
+            color: #718096;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+
+    .courses-list {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .course-item {
+        background: #f8fafc;
+        border-radius: 12px;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        transition: transform 0.3s ease;
+    }
+
+        .course-item:hover {
+            transform: translateY(-5px);
+        }
+
+    .course-info {
+        flex: 1;
+    }
+
+    .course-name {
+        font-size: 20px;
+        font-weight: 600;
+        color: #2d3748;
+        margin: 0 0 10px 0;
+    }
+
+    .course-description {
+        color: #718096;
+        font-size: 14px;
+        margin: 0;
+    }
+
+    .exams-section {
+        margin-top: 15px;
+        padding-top: 15px;
+        border-top: 1px solid #e2e8f0;
+    }
+
+    .exams-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #4a5568;
+        margin: 0 0 10px 0;
+    }
+
+    .exam-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #edf2f7;
+        padding: 10px;
+        border-radius: 8px;
+        margin-bottom: 10px;
+    }
+
+    .exam-name {
+        font-size: 16px;
+        color: #2d3748;
+    }
+
+    .taken-label {
+        color: #38a169;
+        font-weight: 600;
+        font-size: 14px;
+    }
+
+    .no-exams {
+        text-align: center;
+        padding: 15px;
+        background: #edf2f7;
+        border-radius: 8px;
+    }
+
+        .no-exams p {
+            color: #718096;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+    .action-button {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 8px;
+        padding: 8px 15px;
+        font-size: 14px;
+        font-weight: 600;
+        color: white;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+        border: none;
+        cursor: pointer;
+    }
+
+        .action-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .action-button:active {
+            transform: translateY(0);
+        }
+
+        .action-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .action-button:hover::before {
+            left: 100%;
+        }
+
+    .take-exam-button {
+        background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+    }
+
+    .icon-arrow::before {
+        content: '→';
+    }
+
+    .icon-exam::before {
+        content: '📝';
+    }
+</style>
+
+@code {
+    private List<CourseModel> Courses;
+    private ApplicationUser CurrentUser;
+
+    private class CourseModel
+    {
+        public int Id { get; set; }
+        public string Name { get; set; }
+        public string Description { get; set; }
+        public List<ExamModel> Exams { get; set; }
+    }
+
+    private class ExamModel
+    {
+        public int Id { get; set; }
+        public string Name { get; set; }
+        public bool HasTaken { get; set; }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        CurrentUser = await UserManager.GetUserAsync(HttpContextAccessor.HttpContext.User);
+        var enrolledCourseIds = await Context.StudentCourses
+            .Where(sc => sc.StudentId == CurrentUser.Id)
+            .Select(sc => sc.CourseId)
+            .ToListAsync();
+
+        var takenExamIds = await Context.StudentExams
+            .Where(se => se.StudentId == CurrentUser.Id)
+            .Select(se => se.ExamId)
+            .ToListAsync();
+
+        Courses = await Context.Courses
+            .Where(c => enrolledCourseIds.Contains(c.Id))
+            .Include(c => c.Exams)
+            .Select(c => new CourseModel
+            {
+                Id = c.Id,
+                Name = c.Name,
+                Description = c.Description,
+                Exams = c.Exams.Select(e => new ExamModel
+                {
+                    Id = e.Id,
+                    Name = e.Name,
+                    HasTaken = takenExamIds.Contains(e.Id)
+                }).ToList()
+            })
+            .ToListAsync();
+    }
+
+    private void TakeExam(int examId)
+    {
+        NavigationManager.NavigateTo($"/take-exam/{examId}");
+    }
+}

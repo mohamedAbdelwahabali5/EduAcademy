@@ -1,0 +1,39 @@
+﻿@page "/add-choice/{QuestionId:int}"
+@attribute [Authorize(Policy = "InstructorOnly")]
+@inject ApplicationDbContext Context
+
+<h3>Add Choice for Question</h3>
+<EditForm Model="Choice" OnValidSubmit="HandleAddChoice">
+    <DataAnnotationsValidator />
+    <div>
+        <label>Choice Text:</label>
+        <InputText @bind-Value="Choice.Text" />
+        <ValidationMessage For="() => Choice.Text" />
+    </div>
+    <div>
+        <label>Is Correct:</label>
+        <InputCheckbox @bind-Value="Choice.IsCorrect" />
+    </div>
+    <button type="submit">Add Choice</button>
+</EditForm>
+
+@code {
+    [Parameter]
+    public int QuestionId { get; set; }
+
+    private Choice Choice = new Choice();
+    private Question Question;
+
+    protected override void OnInitialized()
+    {
+        Choice.QuestionId = QuestionId;
+        Question = Context.Questions.Find(QuestionId);
+    }
+
+    private async Task HandleAddChoice()
+    {
+        Context.Choices.Add(Choice);
+        await Context.SaveChangesAsync();
+        Choice = new Choice { QuestionId = QuestionId }; // Reset form
+    }
+}

@@ -1,0 +1,295 @@
+﻿@page "/enroll-courses"
+
+@attribute [Authorize(Roles = "Student")]
+@inject UserManager<ApplicationUser> UserManager
+@inject IHttpContextAccessor HttpContextAccessor
+@inject ApplicationDbContext Context
+@inject NavigationManager NavigationManager
+
+<PageTitle>Enroll in Courses</PageTitle>
+
+<div class="enroll-courses-container">
+    <div class="enroll-courses-card">
+        <div class="enroll-courses-header">
+            <h3 class="enroll-courses-title">Enroll in Courses</h3>
+            <p class="enroll-courses-subtitle">Select the courses you want to enroll in</p>
+        </div>
+
+        @if (Courses == null || !Courses.Any())
+        {
+            <div class="no-courses">
+                <p>No courses available to enroll in.</p>
+            </div>
+        }
+        else
+        {
+            <EditForm Model="this" OnValidSubmit="HandleEnrollCourses" class="enroll-courses-form">
+                <DataAnnotationsValidator />
+                <ValidationSummary class="validation-summary" />
+
+                <div class="form-group">
+                    <label class="form-label">
+                        <i class="icon-course"></i>
+                        Available Courses
+                    </label>
+                    @foreach (var course in Courses)
+                    {
+                        <div class="course-item">
+                            <InputCheckbox @bind-Value="course.IsSelected" /> @course.Name
+                            <p class="course-description">@(course.Description.Length > 100 ? course.Description.Substring(0, 100) + "..." : course.Description)</p>
+                        </div>
+                    }
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="submit-button">
+                        <span class="button-text">Enroll</span>
+                        <i class="icon-arrow"></i>
+                    </button>
+                    <a href="/student-dashboard" class="cancel-button">
+                        <span class="button-text">Cancel</span>
+                        <i class="icon-cancel"></i>
+                    </a>
+                </div>
+            </EditForm>
+        }
+    </div>
+</div>
+
+<style>
+    .enroll-courses-container {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #FFF 0%, #764ba2 100%);
+        padding: 20px;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .enroll-courses-card {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        padding: 40px;
+        width: 100%;
+        max-width: 800px;
+        position: relative;
+        overflow: hidden;
+    }
+
+        .enroll-courses-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+        }
+
+    .enroll-courses-header {
+        text-align: center;
+        margin-bottom: 40px;
+    }
+
+    .enroll-courses-title {
+        font-size: 32px;
+        font-weight: 700;
+        color: #2d3748;
+        margin: 0 0 10px 0;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .enroll-courses-subtitle {
+        color: #718096;
+        font-size: 16px;
+        margin: 0;
+    }
+
+    .no-courses {
+        text-align: center;
+        padding: 20px;
+    }
+
+        .no-courses p {
+            color: #718096;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+
+    .enroll-courses-form {
+        display: flex;
+        flex-direction: column;
+        gap: 25px;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .form-label {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 600;
+        color: #4a5568;
+        margin-bottom: 8px;
+        font-size: 14px;
+    }
+
+    .course-item {
+        margin: 10px 0;
+        padding: 10px;
+        background: #f8fafc;
+        border-radius: 8px;
+    }
+
+    .course-description {
+        color: #718096;
+        font-size: 14px;
+        margin: 5px 0 0 0;
+    }
+
+    .validation-summary {
+        background: #fed7d7;
+        border: 1px solid #feb2b2;
+        border-radius: 8px;
+        padding: 12px;
+        margin-bottom: 20px;
+        color: #c53030;
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        margin-top: 20px;
+    }
+
+    .submit-button, .cancel-button {
+        border-radius: 12px;
+        padding: 18px 30px;
+        font-size: 16px;
+        font-weight: 600;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+        border: none;
+        cursor: pointer;
+    }
+
+    .submit-button {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+
+    .cancel-button {
+        background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+        color: white;
+    }
+
+        .submit-button:hover, .cancel-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .submit-button:active, .cancel-button:active {
+            transform: translateY(0);
+        }
+
+        .submit-button::before, .cancel-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .submit-button:hover::before, .cancel-button:hover::before {
+            left: 100%;
+        }
+
+    .button-text {
+        position: relative;
+        z-index: 1;
+    }
+
+    .icon-course::before {
+        content: '📚';
+    }
+
+    .icon-arrow::before {
+        content: '→';
+    }
+
+    .icon-cancel::before {
+        content: '✖';
+    }
+</style>
+
+@code {
+    private List<CourseModel> Courses;
+    private ApplicationUser CurrentUser;
+
+    private class CourseModel
+    {
+        public int Id { get; set; }
+        public string Name { get; set; }
+        public string Description { get; set; }
+        public bool IsSelected { get; set; }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        CurrentUser = await UserManager.GetUserAsync(HttpContextAccessor.HttpContext.User);
+        var enrolledCourseIds = await Context.StudentCourses
+            .Where(sc => sc.StudentId == CurrentUser.Id)
+            .Select(sc => sc.CourseId)
+            .ToListAsync();
+
+        Courses = await Context.Courses
+            .Select(c => new CourseModel
+            {
+                Id = c.Id,
+                Name = c.Name,
+                Description = c.Description,
+                IsSelected = enrolledCourseIds.Contains(c.Id)
+            })
+            .ToListAsync();
+    }
+
+    private async Task HandleEnrollCourses()
+    {
+        var existingEnrollments = await Context.StudentCourses
+            .Where(sc => sc.StudentId == CurrentUser.Id)
+            .ToListAsync();
+
+        Context.StudentCourses.RemoveRange(existingEnrollments);
+
+        var newEnrollments = Courses
+            .Where(c => c.IsSelected)
+            .Select(c => new StudentCourse
+            {
+                StudentId = CurrentUser.Id,
+                CourseId = c.Id
+            })
+            .ToList();
+
+        Context.StudentCourses.AddRange(newEnrollments);
+        await Context.SaveChangesAsync();
+        NavigationManager.NavigateTo("/student-dashboard");
+    }
+}

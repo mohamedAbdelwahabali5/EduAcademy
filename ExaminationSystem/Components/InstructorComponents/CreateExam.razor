@@ -1,0 +1,497 @@
+﻿@page "/create-exam"
+
+@attribute [Authorize(Policy = "InstructorOnly")]
+@inject UserManager<ApplicationUser> UserManager
+@inject IHttpContextAccessor HttpContextAccessor
+@inject ApplicationDbContext Context
+@inject NavigationManager NavigationManager
+
+<PageTitle>Create Exam</PageTitle>
+
+<div class="create-exam-container">
+    <div class="create-exam-card">
+        <div class="create-exam-header">
+            <h3 class="create-exam-title">Create & Manage Exams</h3>
+            <p class="create-exam-subtitle">Create a new exam or manage existing ones</p>
+        </div>
+
+        <EditForm Model="examModel" OnValidSubmit="HandleCreateExam" class="create-exam-form">
+            <DataAnnotationsValidator />
+            <ValidationSummary class="validation-summary" />
+
+            <div class="form-group">
+                <label class="form-label">
+                    <i class="icon-exam"></i>
+                    Exam Name
+                </label>
+                <div class="input-wrapper">
+                    <InputText @bind-Value="examModel.Name" class="form-input" placeholder="Enter exam name" />
+                    <ValidationMessage For="() => examModel.Name" class="validation-error" />
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">
+                    <i class="icon-course"></i>
+                    Course
+                </label>
+                <div class="input-wrapper">
+                     <InputSelect @bind-Value="examModel.CourseId" @onchange="LoadQuestionsAndExams" class="form-input">
+                        @if (Courses != null)
+                            @foreach (var course in Courses)
+                            {
+                                <option value="@course.Id">@course.Name</option>
+                            }
+                        }
+                    </InputSelect>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">
+                    <i class="icon-question"></i>
+                    Select Questions
+                </label>
+                @if (Questions != null)
+                {
+                    @foreach (var question in Questions)
+                    {
+                        <div class="question-item">
+                            <InputCheckbox @bind-Value="question.IsSelected" /> @question.Text
+                        </div>
+                    }
+                }
+                else
+                {
+                    <p class="no-questions">No questions available for this course.</p>
+                }
+            </div>
+
+            <button type="submit" class="submit-button">
+                <span class="button-text">Create Exam</span>
+                <i class="icon-arrow"></i>
+            </button>
+        </EditForm>
+
+        @if (Exams != null && Exams.Any())
+        {
+            <div class="exams-list">
+                <h4 class="exams-title">Existing Exams for @SelectedCourseName</h4>
+                @foreach (var exam in Exams)
+                {
+                    <div class="exam-item">
+                        <div class="exam-info">
+                            <h5 class="exam-name">@exam.Name</h5>
+                        </div>
+                        <div class="exam-actions">
+                            <button class="action-button edit-button" @onclick="() => EditExam(exam.Id)">
+                                <i class="icon-edit"></i> Edit
+                            </button>
+                            <button class="action-button delete-button" @onclick="() => DeleteExam(exam.Id)">
+                                <i class="icon-delete"></i> Delete
+                            </button>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else if (examModel.CourseId != 0)
+        {
+            <div class="no-exams">
+                <p>No exams found for this course.</p>
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    .create-exam-container {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #FFF 0%, #764ba2 100%);
+        padding: 20px;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .create-exam-card {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        padding: 40px;
+        width: 100%;
+        max-width: 800px;
+        position: relative;
+        overflow: hidden;
+    }
+
+        .create-exam-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+        }
+
+    .create-exam-header {
+        text-align: center;
+        margin-bottom: 40px;
+    }
+
+    .create-exam-title {
+        font-size: 32px;
+        font-weight: 700;
+        color: #2d3748;
+        margin: 0 0 10px 0;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .create-exam-subtitle {
+        color: #718096;
+        font-size: 16px;
+        margin: 0;
+    }
+
+    .create-exam-form {
+        display: flex;
+        flex-direction: column;
+        gap: 25px;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .form-label {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 600;
+        color: #4a5568;
+        margin-bottom: 8px;
+        font-size: 14px;
+    }
+
+    .input-wrapper {
+        position: relative;
+    }
+
+    .form-input {
+        width: 100%;
+        padding: 16px 20px;
+        border: 2px solid #e2e8f0;
+        border-radius: 12px;
+        font-size: 16px;
+        transition: all 0.3s ease;
+        background: #f8fafc;
+        color: #2d3748;
+        box-sizing: border-box;
+    }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .form-input::placeholder {
+            color: #a0aec0;
+        }
+
+    .question-item {
+        margin: 10px 0;
+        padding: 10px;
+        background: #f8fafc;
+        border-radius: 8px;
+    }
+
+    .validation-error {
+        color: #e53e3e;
+        font-size: 12px;
+        margin-top: 5px;
+        padding-left: 5px;
+        font-weight: 500;
+    }
+
+    .validation-summary {
+        background: #fed7d7;
+        border: 1px solid #feb2b2;
+        border-radius: 8px;
+        padding: 12px;
+        margin-bottom: 20px;
+        color: #c53030;
+    }
+
+    .submit-button {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        border-radius: 12px;
+        padding: 18px 30px;
+        font-size: 16px;
+        font-weight: 600;
+        color: white;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        margin-top: 10px;
+        position: relative;
+        overflow: hidden;
+    }
+
+        .submit-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .submit-button:active {
+            transform: translateY(0);
+        }
+
+        .submit-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .submit-button:hover::before {
+            left: 100%;
+        }
+
+    .button-text {
+        position: relative;
+        z-index: 1;
+    }
+
+    .exams-list {
+        margin-top: 40px;
+        padding-top: 20px;
+        border-top: 1px solid #e2e8f0;
+    }
+
+    .exams-title {
+        font-size: 24px;
+        font-weight: 600;
+        color: #2d3748;
+        margin-bottom: 20px;
+    }
+
+    .exam-item {
+        background: #f8fafc;
+        border-radius: 12px;
+        padding: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        margin-bottom: 15px;
+        transition: transform 0.3s ease;
+    }
+
+        .exam-item:hover {
+            transform: translateY(-5px);
+        }
+
+    .exam-info {
+        flex: 1;
+    }
+
+    .exam-name {
+        font-size: 18px;
+        font-weight: 600;
+        color: #2d3748;
+        margin: 0 0 10px 0;
+    }
+
+    .exam-created {
+        color: #a0aec0;
+        font-size: 12px;
+        margin: 0;
+    }
+
+    .exam-actions {
+        display: flex;
+        gap: 10px;
+    }
+
+    .action-button {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 8px;
+        padding: 10px 20px;
+        font-size: 14px;
+        font-weight: 600;
+        color: white;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+        border: none;
+        cursor: pointer;
+    }
+
+        .action-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .action-button:active {
+            transform: translateY(0);
+        }
+
+        .action-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .action-button:hover::before {
+            left: 100%;
+        }
+
+    .edit-button {
+        background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+    }
+
+    .delete-button {
+        background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+    }
+
+    .no-questions, .no-exams {
+        text-align: center;
+        color: #718096;
+        font-size: 16px;
+        padding: 20px;
+    }
+
+    .icon-exam::before {
+        content: '📝';
+    }
+
+    .icon-course::before {
+        content: '📚';
+    }
+
+    .icon-question::before {
+        content: '❓';
+    }
+
+    .icon-arrow::before {
+        content: '→';
+    }
+
+    .icon-edit::before {
+        content: '✏️';
+    }
+
+    .icon-delete::before {
+        content: '🗑️';
+    }
+</style>
+
+@code {
+    private ExamModel examModel = new ExamModel();
+    private List<Course> Courses;
+    private List<QuestionModel> Questions;
+    private List<Exam> Exams;
+    private ApplicationUser CurrentUser;
+    private string SelectedCourseName;
+
+    private class ExamModel
+    {
+        public string Name { get; set; }
+        public int CourseId { get; set; }
+    }
+
+    private class QuestionModel
+    {
+        public int Id { get; set; }
+        public string Text { get; set; }
+        public bool IsSelected { get; set; }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        CurrentUser = await UserManager.GetUserAsync(HttpContextAccessor.HttpContext.User);
+        Courses = await Context.Courses
+            .Where(c => c.InstructorId == CurrentUser.Id)
+            .ToListAsync();
+        if (Courses.Any())
+        {
+            examModel.CourseId = Courses.First().Id;
+            await LoadQuestionsAndExams();
+        }
+    }
+
+    private async Task LoadQuestionsAndExams()
+    {
+        var course = await Context.Courses.FindAsync(examModel.CourseId);
+        if (course != null)
+        {
+            SelectedCourseName = course.Name;
+            Questions = await Context.Questions
+                .Where(q => q.CourseId == examModel.CourseId)
+                .Select(q => new QuestionModel { Id = q.Id, Text = q.Text })
+                .ToListAsync();
+            Exams = await Context.Exams
+                .Where(e => e.CourseId == examModel.CourseId)
+                .ToListAsync();
+        }
+    }
+
+    private async Task HandleCreateExam()
+    {
+        var exam = new Exam
+        {
+            Name = examModel.Name,
+            CourseId = examModel.CourseId,
+            ExamQuestions = Questions
+                .Where(q => q.IsSelected)
+                .Select(q => new ExamQuestion { QuestionId = q.Id })
+                .ToList(),
+        };
+        Context.Exams.Add(exam);
+        await Context.SaveChangesAsync();
+        examModel.Name = string.Empty; // Reset exam name
+        await LoadQuestionsAndExams(); // Refresh exams list
+    }
+
+    private async Task DeleteExam(int examId)
+    {
+        var exam = await Context.Exams.FindAsync(examId);
+        if (exam != null && exam.CourseId == examModel.CourseId)
+        {
+            Context.Exams.Remove(exam);
+            await Context.SaveChangesAsync();
+            await LoadQuestionsAndExams();
+        }
+    }
+
+    private void EditExam(int examId)
+    {
+        NavigationManager.NavigateTo($"/edit-exam/{examId}");
+    }
+}

@@ -1,0 +1,378 @@
+﻿@page "/take-exam/{examId:int}"
+
+@attribute [Authorize(Roles = "Student")]
+@inject UserManager<ApplicationUser> UserManager
+@inject IHttpContextAccessor HttpContextAccessor
+@inject ApplicationDbContext Context
+@inject NavigationManager NavigationManager
+
+<PageTitle>Take Exam</PageTitle>
+
+@if (ExamM == null)
+{
+    <div class="loading-message">
+        <p>Loading exam...</p>
+    </div>
+}
+else if (!examExists)
+{
+    <div class="error-message">
+        <p>Exam not found or you are not enrolled in its course.</p>
+        <a href="/student-exams" class="action-button">
+            <span>Back to Exams</span>
+            <i class="icon-arrow"></i>
+        </a>
+    </div>
+}
+else
+{
+    <div class="take-exam-container">
+        <div class="take-exam-card">
+            <div class="take-exam-header">
+                <h3 class="take-exam-title">Exam: @ExamM.Name</h3>
+                <p class="take-exam-subtitle">Course: @CourseName</p>
+            </div>
+
+            <EditForm Model="ExamM" OnValidSubmit="HandleSubmitExam" class="take-exam-form">
+                <DataAnnotationsValidator />
+                <ValidationSummary class="validation-summary" />
+
+                @for (int i = 0; i < ExamM.Questions.Count; i++)
+                {
+                    int index = i;
+                    <div class="question-item">
+                        <h4 class="question-text">@(index + 1). @ExamM.Questions[index].Text</h4>
+                        @foreach (var choice in ExamM.Questions[index].Choices)
+                        {
+                            <div class="choice-item">
+                                <InputRadioGroup @bind-Value="ExamM.Questions[index].SelectedChoiceId">
+                                    <InputRadio Value="@choice.Id" /> @choice.Text
+                                </InputRadioGroup>
+                            </div>
+                        }
+                    </div>
+                }
+
+                <div class="form-actions">
+                    <button type="submit" class="submit-button">
+                        <span class="button-text">Submit Exam</span>
+                        <i class="icon-arrow"></i>
+                    </button>
+                    <a href="/student-exams" class="cancel-button">
+                        <span class="button-text">Cancel</span>
+                        <i class="icon-cancel"></i>
+                    </a>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+}
+
+<style>
+    .take-exam-container {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #FFF 0%, #764ba2 100%);
+        padding: 20px;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .take-exam-card {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        padding: 40px;
+        width: 100%;
+        max-width: 800px;
+        position: relative;
+        overflow: hidden;
+    }
+
+        .take-exam-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+        }
+
+    .take-exam-header {
+        text-align: center;
+        margin-bottom: 40px;
+    }
+
+    .take-exam-title {
+        font-size: 32px;
+        font-weight: 700;
+        color: #2d3748;
+        margin: 0 0 10px 0;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .take-exam-subtitle {
+        color: #718096;
+        font-size: 16px;
+        margin: 0;
+    }
+
+    .take-exam-form {
+        display: flex;
+        flex-direction: column;
+        gap: 25px;
+    }
+
+    .question-item {
+        background: #f8fafc;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+
+    .question-text {
+        font-size: 18px;
+        font-weight: 600;
+        color: #2d3748;
+        margin: 0 0 15px 0;
+    }
+
+    .choice-item {
+        margin: 10px 0;
+        padding: 10px;
+        background: #edf2f7;
+        border-radius: 8px;
+    }
+
+    .validation-summary {
+        background: #fed7d7;
+        border: 1px solid #feb2b2;
+        border-radius: 8px;
+        padding: 12px;
+        margin-bottom: 20px;
+        color: #c53030;
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        margin-top: 20px;
+    }
+
+    .submit-button, .cancel-button {
+        border-radius: 12px;
+        padding: 18px 30px;
+        font-size: 16px;
+        font-weight: 600;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+        border: none;
+        cursor: pointer;
+    }
+
+    .submit-button {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+
+    .cancel-button {
+        background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+        color: white;
+    }
+
+        .submit-button:hover, .cancel-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .submit-button:active, .cancel-button:active {
+            transform: translateY(0);
+        }
+
+        .submit-button::before, .cancel-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .submit-button:hover::before, .cancel-button:hover::before {
+            left: 100%;
+        }
+
+    .button-text {
+        position: relative;
+        z-index: 1;
+    }
+
+    .loading-message, .error-message {
+        text-align: center;
+        padding: 40px;
+        color: #718096;
+        font-size: 16px;
+    }
+
+        .error-message p {
+            margin-bottom: 20px;
+        }
+
+    .action-button {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 12px;
+        padding: 18px 30px;
+        font-size: 16px;
+        font-weight: 600;
+        color: white;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+        .action-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+
+    .icon-arrow::before {
+        content: '→';
+    }
+
+    .icon-cancel::before {
+        content: '✖';
+    }
+</style>
+
+@code {
+    [Parameter]
+    public int ExamId { get; set; }
+
+    private ExamModel ExamM;
+    private ApplicationUser CurrentUser;
+    private bool examExists = true;
+    private string CourseName;
+
+    private class ExamModel
+    {
+        public int Id { get; set; }
+        public string Name { get; set; }
+        public List<QuestionModel> Questions { get; set; }
+    }
+
+    private class QuestionModel
+    {
+        public int Id { get; set; }
+        public string Text { get; set; }
+        public List<ChoiceModel> Choices { get; set; }
+        public int? SelectedChoiceId { get; set; }
+    }
+
+    private class ChoiceModel
+    {
+        public int Id { get; set; }
+        public string Text { get; set; }
+        public bool IsCorrect { get; set; }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        CurrentUser = await UserManager.GetUserAsync(HttpContextAccessor.HttpContext.User);
+        var enrolledCourseIds = await Context.StudentCourses
+            .Where(sc => sc.StudentId == CurrentUser.Id)
+            .Select(sc => sc.CourseId)
+            .ToListAsync();
+
+        var exam = await Context.Exams
+            .Include(e => e.Course)
+            .Include(e => e.ExamQuestions)
+            .ThenInclude(eq => eq.Question)
+            .ThenInclude(q => q.Choices)
+            .FirstOrDefaultAsync(e => e.Id == ExamId);
+
+        if (exam == null || !enrolledCourseIds.Contains(exam.CourseId))
+        {
+            examExists = false;
+        }
+        else
+        {
+            CourseName = exam.Course.Name;
+            ExamM = new ExamModel
+            {
+                Id = exam.Id,
+                Name = exam.Name,
+                Questions = exam.ExamQuestions.Select(eq => new QuestionModel
+                {
+                    Id = eq.Question.Id,
+                    Text = eq.Question.Text,
+                    Choices = eq.Question.Choices.Select(c => new ChoiceModel
+                    {
+                        Id = c.Id,
+                        Text = c.Text,
+                        IsCorrect = c.IsCorrect
+                    }).ToList()
+                }).ToList()
+            };
+        }
+    }
+
+    private async Task HandleSubmitExam()
+    {
+        if (examExists)
+        {
+            int score = 0;
+            int totalQuestions = ExamM.Questions.Count;
+
+            foreach (var question in ExamM.Questions)
+            {
+                var selectedChoice = question.Choices.FirstOrDefault(c => c.Id == question.SelectedChoiceId);
+                if (selectedChoice != null && selectedChoice.IsCorrect)
+                {
+                    score++;
+                }
+            }
+
+            int percentageScore = (int)((double)score / totalQuestions * 100);
+
+            var existingExam = await Context.StudentExams
+                .FirstOrDefaultAsync(se => se.ExamId == ExamId && se.StudentId == CurrentUser.Id);
+
+            if (existingExam != null)
+            {
+                existingExam.Score = percentageScore;
+            }
+            else
+            {
+                var studentExam = new StudentExam
+                {
+                    StudentId = CurrentUser.Id,
+                    ExamId = ExamId,
+                    Score = percentageScore
+                };
+                Context.StudentExams.Add(studentExam);
+            }
+
+            await Context.SaveChangesAsync();
+            NavigationManager.NavigateTo("/student-dashboard");
+        }
+    }
+}

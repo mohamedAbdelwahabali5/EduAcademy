@@ -1,0 +1,330 @@
+﻿@page "/student-dashboard"
+
+@attribute [Authorize(Roles = "Student")]
+@inject UserManager<ApplicationUser> UserManager
+@inject IHttpContextAccessor HttpContextAccessor
+@inject ApplicationDbContext Context
+@inject NavigationManager NavigationManager
+
+<PageTitle>Student Dashboard</PageTitle>
+
+<div class="student-dashboard-container">
+    <div class="student-dashboard-card">
+        <div class="student-dashboard-header">
+            <h3 class="student-dashboard-title">Student Dashboard</h3>
+            <p class="student-dashboard-subtitle">Welcome, @CurrentUser?.FullName</p>
+        </div>
+
+        <div class="dashboard-section">
+            <h4 class="section-title">Enrolled Courses</h4>
+            @if (Courses == null || !Courses.Any())
+            {
+                <div class="no-courses">
+                    <p>You are not enrolled in any courses.</p>
+                    <a href="/enroll-courses" class="action-button">
+                        <span>Enroll in Courses</span>
+                        <i class="icon-arrow"></i>
+                    </a>
+                </div>
+            }
+            else
+            {
+                <div class="courses-list">
+                    @foreach (var course in Courses)
+                    {
+                        <div class="course-item">
+                            <h5 class="course-name">@course.Name</h5>
+                            <p class="course-description">@(course.Description.Length > 100 ? course.Description.Substring(0, 100) + "..." : course.Description)</p>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        <div class="dashboard-section">
+            <h4 class="section-title">Taken Exams & Scores</h4>
+            @if (StudentExams == null || !StudentExams.Any())
+            {
+                <div class="no-exams">
+                    <p>You haven't taken any exams yet.</p>
+                    <a href="/student-exams" class="action-button">
+                        <span>Take an Exam</span>
+                        <i class="icon-exam"></i>
+                    </a>
+                </div>
+            }
+            else
+            {
+                <div class="exams-list">
+                    @foreach (var studentExam in StudentExams)
+                    {
+                        <div class="exam-item">
+                            <div class="exam-info">
+                                <h5 class="exam-name">@studentExam.ExamName</h5>
+                                <p class="exam-course">Course: @studentExam.CourseName</p>
+                                <p class="exam-score">Score: @studentExam.Score%</p>
+                            </div>
+                            <button class="action-button retake-button" @onclick="() => RetakeExam(studentExam.ExamId)">
+                                <i class="icon-exam"></i> Retake
+                            </button>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<style>
+    .student-dashboard-container {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #FFF 0%, #764ba2 100%);
+        padding: 20px;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .student-dashboard-card {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        padding: 40px;
+        width: 100%;
+        max-width: 800px;
+        position: relative;
+        overflow: hidden;
+    }
+
+        .student-dashboard-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+        }
+
+    .student-dashboard-header {
+        text-align: center;
+        margin-bottom: 40px;
+    }
+
+    .student-dashboard-title {
+        font-size: 32px;
+        font-weight: 700;
+        color: #2d3748;
+        margin: 0 0 10px 0;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .student-dashboard-subtitle {
+        color: #718096;
+        font-size: 16px;
+        margin: 0;
+    }
+
+    .dashboard-section {
+        margin-bottom: 40px;
+    }
+
+    .section-title {
+        font-size: 24px;
+        font-weight: 600;
+        color: #2d3748;
+        margin-bottom: 20px;
+    }
+
+    .no-courses, .no-exams {
+        text-align: center;
+        padding: 20px;
+    }
+
+        .no-courses p, .no-exams p {
+            color: #718096;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+
+    .courses-list {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .course-item {
+        background: #f8fafc;
+        border-radius: 12px;
+        padding: 15px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+    }
+
+    .course-name {
+        font-size: 18px;
+        font-weight: 600;
+        color: #2d3748;
+        margin: 0 0 10px 0;
+    }
+
+    .course-description {
+        color: #718096;
+        font-size: 14px;
+        margin: 0;
+    }
+
+    .exams-list {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .exam-item {
+        background: #f8fafc;
+        border-radius: 12px;
+        padding: 15px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+    }
+
+    .exam-info {
+        flex: 1;
+    }
+
+    .exam-name {
+        font-size: 18px;
+        font-weight: 600;
+        color: #2d3748;
+        margin: 0 0 5px 0;
+    }
+
+    .exam-course {
+        color: #718096;
+        font-size: 14px;
+        margin: 0 0 5px 0;
+    }
+
+    .exam-score {
+        color: #38a169;
+        font-weight: 600;
+        font-size: 14px;
+        margin: 0;
+    }
+
+    .action-button {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 8px;
+        padding: 8px 15px;
+        font-size: 14px;
+        font-weight: 600;
+        color: white;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+        border: none;
+        cursor: pointer;
+    }
+
+        .action-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .action-button:active {
+            transform: translateY(0);
+        }
+
+        .action-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .action-button:hover::before {
+            left: 100%;
+        }
+
+    .retake-button {
+        background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+    }
+
+    .icon-arrow::before {
+        content: '→';
+    }
+
+    .icon-exam::before {
+        content: '📝';
+    }
+</style>
+
+@code {
+    private List<CourseModel> Courses;
+    private List<StudentExamModel> StudentExams;
+    private ApplicationUser CurrentUser;
+
+    private class CourseModel
+    {
+        public int Id { get; set; }
+        public string Name { get; set; }
+        public string Description { get; set; }
+    }
+
+    private class StudentExamModel
+    {
+        public int ExamId { get; set; }
+        public string ExamName { get; set; }
+        public string CourseName { get; set; }
+        public int? Score { get; set; }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        CurrentUser = await UserManager.GetUserAsync(HttpContextAccessor.HttpContext.User);
+
+        // Load enrolled courses
+        Courses = await Context.StudentCourses
+            .Where(sc => sc.StudentId == CurrentUser.Id)
+            .Include(sc => sc.Course)
+            .Select(sc => new CourseModel
+            {
+                Id = sc.Course.Id,
+                Name = sc.Course.Name,
+                Description = sc.Course.Description
+            })
+            .ToListAsync();
+
+        // Load taken exams and scores
+        StudentExams = await Context.StudentExams
+            .Where(se => se.StudentId == CurrentUser.Id)
+            .Include(se => se.Exam)
+            .ThenInclude(e => e.Course)
+            .Select(se => new StudentExamModel
+            {
+                ExamId = se.ExamId,
+                ExamName = se.Exam.Name,
+                CourseName = se.Exam.Course.Name,
+                Score = se.Score
+            })
+            .ToListAsync();
+    }
+
+    private void RetakeExam(int examId)
+    {
+        NavigationManager.NavigateTo($"/take-exam/{examId}");
+    }
+}

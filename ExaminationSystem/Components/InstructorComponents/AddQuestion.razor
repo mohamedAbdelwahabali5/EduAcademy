@@ -1,0 +1,453 @@
+﻿@page "/add-question"
+@using System.ComponentModel.DataAnnotations
+
+@attribute [Authorize(Policy = "InstructorOnly")]
+@inject UserManager<ApplicationUser> UserManager
+@inject IHttpContextAccessor HttpContextAccessor
+@inject ApplicationDbContext Context
+@inject NavigationManager NavigationManager
+
+<PageTitle>Add Question</PageTitle>
+
+<div class="add-question-container">
+    <div class="add-question-card">
+        <div class="add-question-header">
+            <h3 class="add-question-title">Add New Question</h3>
+            <p class="add-question-subtitle">Create a new question with choices for your course</p>
+        </div>
+
+        <EditForm Model="QuestionM" OnValidSubmit="HandleAddQuestion" class="add-question-form">
+            <DataAnnotationsValidator />
+            <ValidationSummary class="validation-summary" />
+
+            <div class="form-group">
+                <label class="form-label">
+                    <i class="icon-course"></i>
+                    Course
+                </label>
+                <div class="input-wrapper">
+                    @if (Courses != null)
+                    {
+                        <InputSelect @bind-Value="QuestionM.CourseId" class="form-input">
+                            @foreach (var course in Courses)
+                            {
+                                <option value="@course.Id">@course.Name</option>
+                            }
+                        </InputSelect>
+                    }
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">
+                    <i class="icon-question"></i>
+                    Question Text
+                </label>
+                <div class="input-wrapper">
+                    <InputText @bind-Value="QuestionM.Text" class="form-input" placeholder="Enter question text" />
+                    <ValidationMessage For="() => QuestionM.Text" class="validation-error" />
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">
+                    <i class="icon-choices"></i>
+                    Choices (Select one as correct)
+                </label>
+                @for (int i = 0; i < QuestionM.Choices.Count; i++)
+                {
+                    int index = i; // Capture the loop variable for use in lambda
+                                   <div class="choice-item">
+                                       <div class="choice-text">
+                                           <InputText @bind-Value="QuestionM.Choices[index].Text" class="form-input choice-input" placeholder="@($"Choice {index + 1}")" />
+                                           <ValidationMessage For="() => QuestionM.Choices[index].Text" class="validation-error" />
+                                       </div>
+                                       <div class="choice-correct">
+                                           <InputCheckbox @bind-Value="QuestionM.Choices[index].IsCorrect" @onchange="() => UpdateCorrectChoice(index)" />
+                                           <label>Correct</label>
+                                       </div>
+                                       <button type="button" class="remove-choice-button" @onclick="() => RemoveChoice(index)">
+                                           <i class="icon-delete"></i> Remove
+                                       </button>
+                                   </div>
+                }
+                @if (QuestionM.Choices.Count < 4)
+                {
+                    <button type="button" class="add-choice-button" @onclick="AddChoice">
+                        <i class="icon-add"></i> Add Choice
+                    </button>
+                }
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="submit-button">
+                    <span class="button-text">Add Question</span>
+                    <i class="icon-arrow"></i>
+                </button>
+                <a href="/manage-questions" class="cancel-button">
+                    <span class="button-text">Cancel</span>
+                    <i class="icon-cancel"></i>
+                </a>
+            </div>
+        </EditForm>
+    </div>
+</div>
+
+<style>
+    .add-question-container {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #FFF 0%, #764ba2 100%);
+        padding: 20px;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .add-question-card {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        padding: 40px;
+        width: 100%;
+        max-width: 600px;
+        position: relative;
+        overflow: hidden;
+    }
+
+        .add-question-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+        }
+
+    .add-question-header {
+        text-align: center;
+        margin-bottom: 40px;
+    }
+
+    .add-question-title {
+        font-size: 32px;
+        font-weight: 700;
+        color: #2d3748;
+        margin: 0 0 10px 0;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .add-question-subtitle {
+        color: #718096;
+        font-size: 16px;
+        margin: 0;
+    }
+
+    .add-question-form {
+        display: flex;
+        flex-direction: column;
+        gap: 25px;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .form-label {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 600;
+        color: #4a5568;
+        margin-bottom: 8px;
+        font-size: 14px;
+    }
+
+    .input-wrapper {
+        position: relative;
+    }
+
+    .form-input {
+        width: 100%;
+        padding: 16px 20px;
+        border: 2px solid #e2e8f0;
+        border-radius: 12px;
+        font-size: 16px;
+        transition: all 0.3s ease;
+        background: #f8fafc;
+        color: #2d3748;
+        box-sizing: border-box;
+    }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .form-input::placeholder {
+            color: #a0aec0;
+        }
+
+    .choice-item {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        background: #f8fafc;
+        border-radius: 12px;
+        padding: 10px;
+        margin-bottom: 10px;
+    }
+
+    .choice-text {
+        flex: 1;
+    }
+
+    .choice-input {
+        width: 100%;
+    }
+
+    .choice-correct {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .remove-choice-button {
+        background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+        border: none;
+        border-radius: 8px;
+        padding: 8px 15px;
+        font-size: 14px;
+        font-weight: 600;
+        color: white;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+        .remove-choice-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(229, 62, 62, 0.3);
+        }
+
+    .add-choice-button {
+        background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+        border: none;
+        border-radius: 8px;
+        padding: 10px 20px;
+        font-size: 14px;
+        font-weight: 600;
+        color: white;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        margin-top: 10px;
+    }
+
+        .add-choice-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(72, 187, 120, 0.3);
+        }
+
+    .validation-error {
+        color: #e53e3e;
+        font-size: 12px;
+        margin-top: 5px;
+        padding-left: 5px;
+        font-weight: 500;
+    }
+
+    .validation-summary {
+        background: #fed7d7;
+        border: 1px solid #feb2b2;
+        border-radius: 8px;
+        padding: 12px;
+        margin-bottom: 20px;
+        color: #c53030;
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        margin-top: 20px;
+    }
+
+    .submit-button, .cancel-button {
+        border-radius: 12px;
+        padding: 18px 30px;
+        font-size: 16px;
+        font-weight: 600;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+        border: none;
+        cursor: pointer;
+    }
+
+    .submit-button {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+
+    .cancel-button {
+        background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+        color: white;
+    }
+
+        .submit-button:hover, .cancel-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .submit-button:active, .cancel-button:active {
+            transform: translateY(0);
+        }
+
+        .submit-button::before, .cancel-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .submit-button:hover::before, .cancel-button:hover::before {
+            left: 100%;
+        }
+
+    .button-text {
+        position: relative;
+        z-index: 1;
+    }
+
+    .icon-course::before {
+        content: '📚';
+    }
+
+    .icon-question::before {
+        content: '❓';
+    }
+
+    .icon-choices::before {
+        content: '🔘';
+    }
+
+    .icon-arrow::before {
+        content: '→';
+    }
+
+    .icon-cancel::before {
+        content: '✖';
+    }
+
+    .icon-add::before {
+        content: '➕';
+    }
+
+    .icon-delete::before {
+        content: '🗑️';
+    }
+</style>
+
+@code {
+    private QuestionModel QuestionM = new QuestionModel();
+    private List<Course> Courses;
+    private ApplicationUser CurrentUser;
+
+    private class QuestionModel
+    {
+        public int CourseId { get; set; }
+
+        [Required(ErrorMessage = "Question text is required")]
+        [StringLength(500, ErrorMessage = "Question text cannot exceed 500 characters")]
+        public string Text { get; set; }
+
+        public List<ChoiceModel> Choices { get; set; } = new List<ChoiceModel> { new ChoiceModel(), new ChoiceModel() }; // Start with 2 choices
+    }
+
+    private class ChoiceModel
+    {
+        [Required(ErrorMessage = "Choice text is required")]
+        [StringLength(200, ErrorMessage = "Choice text cannot exceed 200 characters")]
+        public string Text { get; set; }
+
+        public bool IsCorrect { get; set; }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        CurrentUser = await UserManager.GetUserAsync(HttpContextAccessor.HttpContext.User);
+        Courses = await Context.Courses
+            .Where(c => c.InstructorId == CurrentUser.Id)
+            .ToListAsync();
+        if (Courses.Any())
+        {
+            QuestionM.CourseId = Courses.First().Id;
+        }
+    }
+
+    private void AddChoice()
+    {
+        if (QuestionM.Choices.Count < 4)
+        {
+            QuestionM.Choices.Add(new ChoiceModel());
+        }
+    }
+
+    private void RemoveChoice(int index)
+    {
+        if (QuestionM.Choices.Count > 2) // Ensure at least 2 choices remain
+        {
+            QuestionM.Choices.RemoveAt(index);
+        }
+    }
+
+    private void UpdateCorrectChoice(int selectedIndex)
+    {
+        for (int i = 0; i < QuestionM.Choices.Count; i++)
+        {
+            QuestionM.Choices[i].IsCorrect = (i == selectedIndex);
+        }
+    }
+
+    private async Task HandleAddQuestion()
+    {
+        var question = new Question
+        {
+            CourseId = QuestionM.CourseId,
+            Text = QuestionM.Text,
+            Choices = QuestionM.Choices
+                .Select(c => new Choice
+                {
+                    Text = c.Text,
+                    IsCorrect = c.IsCorrect
+                })
+                .ToList(),
+        };
+
+        Context.Questions.Add(question);
+        await Context.SaveChangesAsync();
+        NavigationManager.NavigateTo("/manage-questions");
+    }
+}

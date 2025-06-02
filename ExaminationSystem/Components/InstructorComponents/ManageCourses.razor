@@ -1,0 +1,729 @@
+﻿@page "/manage-courses"
+
+@attribute [Authorize(Policy = "InstructorOnly")]
+@inject UserManager<ApplicationUser> UserManager
+@inject IHttpContextAccessor HttpContextAccessor
+@inject ApplicationDbContext Context
+@inject NavigationManager NavigationManager
+
+<PageTitle>Manage Courses</PageTitle>
+
+<div class="manage-courses-container">
+    <div class="manage-courses-card">
+        <div class="manage-courses-header">
+            <div class="header-content">
+                <h3 class="manage-courses-title">
+                    <i class="icon-courses"></i>
+                    Manage Your Courses
+                </h3>
+                <p class="manage-courses-subtitle">View, edit, or delete your courses and their exams</p>
+            </div>
+            <div class="header-actions">
+                <a href="/add-course" class="action-button primary-button">
+                    <i class="icon-plus"></i>
+                    <span>Add New Course</span>
+                </a>    
+            </div>
+        </div>
+
+        @if (Courses == null || !Courses.Any())
+        {
+            <div class="no-courses">
+                <div class="empty-state">
+                    <i class="empty-icon"></i>
+                    <h4>No courses yet</h4>
+                    <p>Start building your curriculum by creating your first course</p>
+                    <a href="/add-course" class="action-button primary-button large">
+                        <i class="icon-plus"></i>
+                        <span>Create Your First Course</span>
+                    </a>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="courses-grid">
+                @foreach (var course in Courses)
+                {
+                    <div class="course-card">
+                        <div class="course-header">
+                            <div class="course-meta">
+                                <span class="course-badge">Course</span>
+                                <span class="course-date">@course.CreatedAt.ToString("MMM dd, yyyy")</span>
+                            </div>
+                            <div class="course-menu">
+                                <button class="menu-trigger">⋮</button>
+                                <div class="dropdown-menu">
+                                    <button class="menu-item edit" @onclick="() => EditCourse(course.Id)">
+                                        <i class="icon-edit"></i> Edit Course
+                                    </button>
+                                    <button class="menu-item delete" @onclick="() => DeleteCourse(course.Id)">
+                                        <i class="icon-delete"></i> Delete Course
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="course-content">
+                            <h4 class="course-name">@course.Name</h4>
+                            <p class="course-description">
+                                @(course.Description.Length > 120 ? course.Description.Substring(0, 120) + "..." : course.Description)
+                            </p>
+                        </div>
+
+                        <div class="course-stats">
+                            <div class="stat-item">
+                                <i class="icon-exam"></i>
+                                <span class="stat-value">@(course.Exams?.Count ?? 0)</span>
+                                <span class="stat-label">Exams</span>
+                            </div>
+                            <div class="stat-divider"></div>
+                            <div class="stat-item">
+                                <i class="icon-calendar"></i>
+                                <span class="stat-value">@((DateTime.Now - course.CreatedAt).Days)</span>
+                                <span class="stat-label">Days ago</span>
+                            </div>
+                        </div>
+
+                        @if (course.Exams != null && course.Exams.Any())
+                        {
+                            <div class="exams-section">
+                                <div class="exams-header">
+                                    <h5 class="exams-title">
+                                        <i class="icon-list"></i>
+                                        Exams (@course.Exams.Count)
+                                    </h5>
+                                    <a href="/create-exam" class="add-exam-link">
+                                        <i class="icon-plus-small"></i>
+                                    </a>
+                                </div>
+                                <div class="exams-list">
+                                    @foreach (var exam in course.Exams.Take(3))
+                                    {
+                                        <div class="exam-item">
+                                            <div class="exam-info">
+                                                <i class="icon-document"></i>
+                                                <span class="exam-name">@exam.Name</span>
+                                            </div>
+                                            <div class="exam-actions">
+                                                <button class="action-btn edit-btn" @onclick="() => EditExam(exam.Id)" title="Edit Exam">
+                                                    <i class="icon-edit-small"></i>
+                                                </button>
+                                                <button class="action-btn delete-btn" @onclick="() => DeleteExam(exam.Id, course.Id)" title="Delete Exam">
+                                                    <i class="icon-delete-small"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    }
+                                    @if (course.Exams.Count > 3)
+                                    {
+                                        <div class="more-exams">
+                                            <span>+@(course.Exams.Count - 3) more exams</span>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="no-exams">
+                                <div class="no-exams-content">
+                                    <i class="icon-empty-exam"></i>
+                                    <span>No exams yet</span>
+                                    <a href="/create-exam" class="add-first-exam">
+                                        <i class="icon-plus-small"></i>
+                                        Add First Exam
+                                    </a>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    .manage-courses-container {
+        min-height: 100vh;
+        background: linear-gradient(135deg, #FFF 0%, #764ba2 100%);
+        padding: 20px;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .manage-courses-card {
+        background: white;
+        border-radius: 24px;
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.1);
+        padding: 0;
+        width: 100%;
+        max-width: 1200px;
+        margin: 0 auto;
+        position: relative;
+        overflow: hidden;
+    }
+
+        .manage-courses-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+        }
+
+    .manage-courses-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 40px 40px 30px 40px;
+        background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .header-content {
+        flex: 1;
+    }
+
+    .manage-courses-title {
+        font-size: 36px;
+        font-weight: 800;
+        color: #2d3748;
+        margin: 0 0 8px 0;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .manage-courses-subtitle {
+        color: #718096;
+        font-size: 16px;
+        margin: 0;
+        font-weight: 400;
+    }
+
+    .header-actions {
+        margin-left: 20px;
+    }
+
+    .no-courses {
+        padding: 80px 40px;
+    }
+
+    .empty-state {
+        text-align: center;
+        max-width: 400px;
+        margin: 0 auto;
+    }
+
+    .empty-icon::before {
+        content: '📚';
+        font-size: 64px;
+        display: block;
+        margin-bottom: 20px;
+        opacity: 0.5;
+    }
+
+    .empty-state h4 {
+        font-size: 24px;
+        font-weight: 600;
+        color: #2d3748;
+        margin: 0 0 8px 0;
+    }
+
+    .empty-state p {
+        color: #718096;
+        font-size: 16px;
+        margin: 0 0 30px 0;
+    }
+
+    .courses-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+        gap: 24px;
+        padding: 30px 40px 40px 40px;
+    }
+
+    .course-card {
+        background: white;
+        border-radius: 16px;
+        border: 1px solid #e2e8f0;
+        transition: all 0.3s ease;
+        overflow: hidden;
+        position: relative;
+    }
+
+        .course-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+            border-color: #667eea;
+        }
+
+    .course-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px 20px 0 20px;
+    }
+
+    .course-meta {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .course-badge {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .course-date {
+        color: #a0aec0;
+        font-size: 12px;
+        font-weight: 500;
+    }
+
+    .course-menu {
+        position: relative;
+    }
+
+    .menu-trigger {
+        background: none;
+        border: none;
+        color: #718096;
+        font-size: 20px;
+        cursor: pointer;
+        padding: 8px;
+        border-radius: 6px;
+        transition: all 0.2s ease;
+    }
+
+        .menu-trigger:hover {
+            background: #f1f5f9;
+            color: #4a5568;
+        }
+
+    .dropdown-menu {
+        position: absolute;
+        top: 100%;
+        right: 0;
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        min-width: 140px;
+        z-index: 10;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-10px);
+        transition: all 0.2s ease;
+    }
+
+    .course-menu:hover .dropdown-menu {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+    }
+
+    .menu-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        padding: 10px 12px;
+        border: none;
+        background: none;
+        font-size: 13px;
+        color: #4a5568;
+        cursor: pointer;
+        transition: background 0.2s ease;
+    }
+
+        .menu-item:hover {
+            background: #f8fafc;
+        }
+
+        .menu-item.edit:hover {
+            background: #f0fff4;
+            color: #38a169;
+        }
+
+        .menu-item.delete:hover {
+            background: #fef5f5;
+            color: #e53e3e;
+        }
+
+    .course-content {
+        padding: 20px;
+    }
+
+    .course-name {
+        font-size: 20px;
+        font-weight: 700;
+        color: #2d3748;
+        margin: 0 0 12px 0;
+        line-height: 1.3;
+    }
+
+    .course-description {
+        color: #718096;
+        font-size: 14px;
+        line-height: 1.5;
+        margin: 0;
+    }
+
+    .course-stats {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 20px;
+        padding: 16px 20px;
+        background: #f8fafc;
+        border-top: 1px solid #e2e8f0;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .stat-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .stat-value {
+        font-size: 18px;
+        font-weight: 700;
+        color: #2d3748;
+    }
+
+    .stat-label {
+        font-size: 11px;
+        color: #a0aec0;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 600;
+    }
+
+    .stat-divider {
+        width: 1px;
+        height: 32px;
+        background: #e2e8f0;
+    }
+
+    .exams-section {
+        padding: 20px;
+    }
+
+    .exams-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+    }
+
+    .exams-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #4a5568;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .add-exam-link {
+        background: #f1f5f9;
+        color: #667eea;
+        padding: 6px;
+        border-radius: 6px;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+
+        .add-exam-link:hover {
+            background: #667eea;
+            color: white;
+        }
+
+    .exams-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .exam-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #f8fafc;
+        padding: 12px 16px;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+    }
+
+        .exam-item:hover {
+            background: #edf2f7;
+        }
+
+    .exam-info {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex: 1;
+    }
+
+    .exam-name {
+        font-size: 14px;
+        color: #2d3748;
+        font-weight: 500;
+    }
+
+    .exam-actions {
+        display: flex;
+        gap: 4px;
+    }
+
+    .action-btn {
+        background: none;
+        border: none;
+        padding: 6px;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 12px;
+    }
+
+    .edit-btn {
+        color: #48bb78;
+    }
+
+        .edit-btn:hover {
+            background: #f0fff4;
+        }
+
+    .delete-btn {
+        color: #e53e3e;
+    }
+
+        .delete-btn:hover {
+            background: #fef5f5;
+        }
+
+    .more-exams {
+        text-align: center;
+        padding: 8px;
+        color: #718096;
+        font-size: 12px;
+        font-style: italic;
+    }
+
+    .no-exams {
+        padding: 20px;
+        background: #f8fafc;
+    }
+
+    .no-exams-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        text-align: center;
+        padding: 20px;
+    }
+
+        .no-exams-content span {
+            color: #718096;
+            font-size: 14px;
+        }
+
+    .add-first-exam {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: #667eea;
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 500;
+        margin-top: 8px;
+        transition: color 0.2s ease;
+    }
+
+        .add-first-exam:hover {
+            color: #764ba2;
+        }
+
+    /* Button Styles */
+    .action-button {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 10px;
+        padding: 12px 20px;
+        font-size: 14px;
+        font-weight: 600;
+        color: white;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.3s ease;
+        border: none;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+    }
+
+        .action-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .action-button.large {
+            padding: 16px 32px;
+            font-size: 16px;
+        }
+
+        .action-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .action-button:hover::before {
+            left: 100%;
+        }
+
+    /* Icons */
+    .icon-courses::before {
+        content: '🎓';
+    }
+
+    .icon-plus::before {
+        content: '+';
+    }
+
+    .icon-edit::before {
+        content: '✏️';
+    }
+
+    .icon-delete::before {
+        content: '🗑️';
+    }
+
+    .icon-exam::before {
+        content: '📝';
+    }
+
+    .icon-calendar::before {
+        content: '📅';
+    }
+
+    .icon-list::before {
+        content: '📋';
+    }
+
+    .icon-document::before {
+        content: '📄';
+    }
+
+    .icon-plus-small::before {
+        content: '+';
+        font-size: 12px;
+    }
+
+    .icon-edit-small::before {
+        content: '✏';
+        font-size: 10px;
+    }
+
+    .icon-delete-small::before {
+        content: '×';
+        font-size: 14px;
+    }
+
+    .icon-empty-exam::before {
+        content: '📝';
+        font-size: 24px;
+        opacity: 0.3;
+    }
+    
+
+   
+</style>
+
+@code {
+    private List<Course> Courses = new List<Course>();
+    private ApplicationUser CurrentUser;
+
+    protected override async Task OnInitializedAsync()
+    {
+        CurrentUser = await UserManager.GetUserAsync(HttpContextAccessor.HttpContext.User);
+        if (CurrentUser != null)
+        {
+            Courses = await Context.Courses
+                .Include(c => c.Exams)
+                .Where(c => c.InstructorId == CurrentUser.Id)
+                .ToListAsync();
+        }
+    }
+
+    private async Task DeleteCourse(int courseId)
+    {
+        var course = await Context.Courses.FindAsync(courseId);
+        if (course != null && course.InstructorId == CurrentUser.Id)
+        {
+            Context.Courses.Remove(course);
+            await Context.SaveChangesAsync();
+            Courses = await Context.Courses
+                .Include(c => c.Exams)
+                .Where(c => c.InstructorId == CurrentUser.Id)
+                .ToListAsync();
+        }
+    }
+
+    private void EditCourse(int courseId)
+    {
+        NavigationManager.NavigateTo($"/edit-course/{courseId}");
+    }
+
+    private async Task DeleteExam(int examId, int courseId)
+    {
+        var exam = await Context.Exams.FindAsync(examId);
+        if (exam != null && exam.CourseId == courseId)
+        {
+            Context.Exams.Remove(exam);
+            await Context.SaveChangesAsync();
+            var course = await Context.Courses
+                .Include(c => c.Exams)
+                .FirstOrDefaultAsync(c => c.Id == courseId);
+            if (course != null)
+            {
+                var index = Courses.FindIndex(c => c.Id == courseId);
+                if (index != -1)
+                {
+                    Courses[index] = course;
+                }
+            }
+        }
+    }
+
+    private void EditExam(int examId)
+    {
+        NavigationManager.NavigateTo($"/edit-exam/{examId}");
+    }
+}

@@ -1,0 +1,219 @@
+﻿@page "/"
+
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject UserManager<ApplicationUser> UserManager
+@inject NavigationManager NavigationManager
+
+<PageTitle>Home</PageTitle>
+
+<div class="landing-container">
+    <div class="landing-card">
+        @if (isAuthenticated)
+        {
+            @if (isInstructor)
+            {
+                <div class="landing-header">
+                    <h1 class="landing-title">Welcome, @userFullName!</h1>
+                    <p class="landing-subtitle">Manage your courses and exams</p>
+                </div>
+                <div class="action-buttons">
+                    <a href="/add-course" class="action-button">
+                        <span>Add New Course</span>
+                        <i class="icon-arrow"></i>
+                    </a>
+                    <a href="/manage-exams" class="action-button">
+                        <span>Manage Exams</span>
+                        <i class="icon-arrow"></i>
+                    </a>
+                    <a href="/create-exam" class="action-button">
+                        <span>Create Exam</span>
+                        <i class="icon-arrow"></i>
+                    </a>
+                    <a href="/add-question" class="action-button">
+                        <span>Add Questions</span>
+                        <i class="icon-arrow"></i>
+                    </a>
+                </div>
+            }
+            else if (isStudent)
+            {
+                <div class="landing-header">
+                    <h1 class="landing-title">Welcome, @userFullName!</h1>
+                    <p class="landing-subtitle">View your exams and results</p>
+                </div>
+                <div class="action-buttons">
+                    <a href="/student-exams" class="action-button">
+                        <span>View Exams</span>
+                        <i class="icon-arrow"></i>
+                    </a>
+                    <a href="/take-exam" class="action-button">
+                        <span>Take Exam</span>
+                        <i class="icon-arrow"></i>
+                    </a>
+                    <a href="/enroll-courses" class="action-button">
+                        <span>Enroll in Courses</span>
+                        <i class="icon-arrow"></i>
+                    </a>
+                    <a href="/student-dashboard" class="action-button">
+                        <span>Dashboard</span>
+                        <i class="icon-arrow"></i>
+                    </a>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="landing-header">
+                <h1 class="landing-title">Hello, World!</h1>
+                <p class="landing-subtitle">Welcome to your new Examination System app</p>
+            </div>
+            <div class="action-buttons">
+                <a href="/Account/Login" class="action-button">
+                    <span>Log In</span>
+                    <i class="icon-arrow"></i>
+                </a>
+                <a href="/register" class="action-button">
+                    <span>Register</span>
+                    <i class="icon-arrow"></i>
+                </a>
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    .landing-container {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #FFF 0%, #764ba2 100%);
+        /* padding: 20px; */
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .landing-card {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        padding: 40px;
+        width: 100%;
+        max-width: 600px;
+        position: relative;
+        overflow: hidden;
+        text-align: center;
+    }
+
+        .landing-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+        }
+
+    .landing-header {
+        margin-bottom: 40px;
+    }
+
+    .landing-title {
+        font-size: 32px;
+        font-weight: 700;
+        color: #2d3748;
+        margin: 0 0 10px 0;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .landing-subtitle {
+        color: #718096;
+        font-size: 16px;
+        margin: 0;
+    }
+
+    .action-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .action-button {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 12px;
+        padding: 18px 30px;
+        font-size: 16px;
+        font-weight: 600;
+        color: white;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+        .action-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .action-button:active {
+            transform: translateY(0);
+        }
+
+        .action-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .action-button:hover::before {
+            left: 100%;
+        }
+
+    .icon-arrow::before {
+        content: '→';
+    }
+</style>
+
+@code {
+    private bool isAuthenticated;
+    private bool isInstructor;
+    private bool isStudent;
+    private string? userFullName;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        isAuthenticated = user.Identity?.IsAuthenticated ?? false;
+
+        if (isAuthenticated)
+        {
+            isInstructor = user.IsInRole("Instructor");
+            isStudent = user.IsInRole("Student");
+            var userId = user.FindFirst(claim => claim.Type == ClaimTypes.NameIdentifier)?.Value;
+            if (userId != null)
+            {
+                var appUser = await UserManager.FindByIdAsync(userId);
+                userFullName = appUser?.FullName;
+                if (userFullName?.Length > 20)
+                {
+                    userFullName = userFullName.Substring(0, 20) + "..."; 
+                }
+            }
+        }
+    }
+}
