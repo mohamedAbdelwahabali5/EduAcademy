@@ -265,27 +265,56 @@
     protected override async Task OnInitializedAsync()
     {
         CurrentUser = await UserManager.GetUserAsync(HttpContextAccessor.HttpContext.User);
+        await LoadQuestions();
+    }
+
+    private async Task LoadQuestions()
+    {
         Questions = await Context.Questions
             .Include(q => q.Course)
             .Include(q => q.Choices)
+            .Include(q => q.ExamQuestions)
             .Where(q => q.Course.InstructorId == CurrentUser.Id)
             .ToListAsync();
     }
 
     private async Task DeleteQuestion(int questionId)
     {
-        var question = await Context.Questions.FindAsync(questionId);
-        if (question != null && question.Course.InstructorId == CurrentUser.Id)
+        try
         {
-            Context.Questions.Remove(question);
-            await Context.SaveChangesAsync();
-            Snackbar.Add("Question deleted successful", Severity.Success);
+            bool? result = await DialogService.ShowMessageBox(
+                "Confirm Delete",
+                "Are you sure you want to delete this question and all its related data?",
+                yesText: "Delete",
+                cancelText: "Cancel");
 
-            Questions = await Context.Questions
-                .Include(q => q.Course)
+            if (result != true) return;
+
+            var question = await Context.Questions
                 .Include(q => q.Choices)
-                .Where(q => q.Course.InstructorId == CurrentUser.Id)
-                .ToListAsync();
+                .Include(q => q.ExamQuestions)
+                .FirstOrDefaultAsync(q => q.Id == questionId && q.Course.InstructorId == CurrentUser.Id);
+
+            if (question == null)
+            {
+                Snackbar.Add("Question not found or you don't have permission", Severity.Error);
+                return;
+            }
+
+            Context.Choices.RemoveRange(question.Choices);
+
+            Context.ExamQuestions.RemoveRange(question.ExamQuestions);
+
+            Context.Questions.Remove(question);
+
+            await Context.SaveChangesAsync();
+            Snackbar.Add("Question deleted successfully", Severity.Success);
+
+            await LoadQuestions();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error deleting question: {ex.Message}", Severity.Error);
         }
     }
 

@@ -448,6 +448,8 @@
 
         Context.Questions.Add(question);
         await Context.SaveChangesAsync();
+        Snackbar.Add("Question added successful", Severity.Success);
+
         NavigationManager.NavigateTo("/manage-questions");
     }
 }

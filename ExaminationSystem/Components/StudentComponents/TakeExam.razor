@@ -372,6 +372,14 @@ else
             }
 
             await Context.SaveChangesAsync();
+            if(percentageScore < 50)
+            {
+                Snackbar.Add($"Exam submitted with a score of {percentageScore}%. You may retake the exam.", Severity.Warning);
+            }
+            else
+            {
+                Snackbar.Add($"Exam submitted successfully! Your score: {percentageScore}%", Severity.Success);
+            }
             NavigationManager.NavigateTo("/student-dashboard");
         }
     }

@@ -45,15 +45,15 @@
             <div class="courses-grid">
                 @foreach (var course in Courses)
                 {
-                    <div class="course-card">
+                    <div class="course-card" @onclick:stopPropagation>
                         <div class="course-header">
                             <div class="course-meta">
                                 <span class="course-badge">Course</span>
                                 <span class="course-date">@course.CreatedAt.ToString("MMM dd, yyyy")</span>
                             </div>
                             <div class="course-menu">
-                                <button class="menu-trigger">⋮</button>
-                                <div class="dropdown-menu">
+                                <button class="menu-trigger" @onclick="() => ToggleDropdown(course.Id)">⋮</button>
+                                <div class="dropdown-menu @(activeDropdown == course.Id ? "visible" : "")">
                                     <button class="menu-item edit" @onclick="() => EditCourse(course.Id)">
                                         <i class="icon-edit"></i> Edit Course
                                     </button>
@@ -199,6 +199,23 @@
         display: flex;
         align-items: center;
         gap: 12px;
+    }
+
+    .dropdown-menu {
+        /* Modify this rule */
+        display: none;
+        position: absolute;
+        right: 0;
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        min-width: 140px;
+        z-index: 10;
+    }
+
+    .dropdown-menu.visible {
+        display: block;
     }
 
     .manage-courses-subtitle {
@@ -669,14 +686,37 @@
 @code {
     private List<Course> Courses = new List<Course>();
     private ApplicationUser CurrentUser;
+    private int? activeDropdown = null; // Track which dropdown is active
 
     protected override async Task OnInitializedAsync()
     {
         CurrentUser = await UserManager.GetUserAsync(HttpContextAccessor.HttpContext.User);
+        await LoadCourses();
+    }
+
+    private void ToggleDropdown(int courseId)
+    {
+        // Toggle the dropdown - if already active, close it; otherwise open it
+        activeDropdown = activeDropdown == courseId ? null : courseId;
+    }
+
+    private void CloseAllDropdowns()
+    {
+        // Close any open dropdowns
+        activeDropdown = null;
+    }
+
+    private async Task LoadCourses()
+    {
         if (CurrentUser != null)
         {
             Courses = await Context.Courses
                 .Include(c => c.Exams)
+                    .ThenInclude(e => e.ExamQuestions)
+                        .ThenInclude(eq => eq.Question)
+                            .ThenInclude(q => q.Choices)
+                .Include(c => c.Questions)
+                    .ThenInclude(q => q.Choices)
                 .Where(c => c.InstructorId == CurrentUser.Id)
                 .ToListAsync();
         }
@@ -684,33 +724,97 @@
 
     private async Task DeleteCourse(int courseId)
     {
-        var course = await Context.Courses.FindAsync(courseId);
-        if (course != null && course.InstructorId == CurrentUser.Id)
+        try
         {
-            Context.Courses.Remove(course);
-            await Context.SaveChangesAsync();
-            Courses = await Context.Courses
+            var course = await Context.Courses
                 .Include(c => c.Exams)
-                .Where(c => c.InstructorId == CurrentUser.Id)
-                .ToListAsync();
-        }
-    }
+                    .ThenInclude(e => e.ExamQuestions)
+                .Include(c => c.Questions)
+                    .ThenInclude(q => q.Choices)
+                .FirstOrDefaultAsync(c => c.Id == courseId && c.InstructorId == CurrentUser.Id);
 
-    private void EditCourse(int courseId)
-    {
-        NavigationManager.NavigateTo($"/edit-course/{courseId}");
+            if (course == null) return;
+
+            // Confirmation dialog
+            bool? result = await DialogService.ShowMessageBox(
+                "Confirm Delete",
+                "Are you sure you want to delete this course and all its related data?",
+                yesText: "Delete",
+                cancelText: "Cancel");
+
+            if (result != true) return;
+
+            // Delete related data in correct order
+            foreach (var exam in course.Exams)
+            {
+                Context.ExamQuestions.RemoveRange(exam.ExamQuestions);
+            }
+
+            Context.Exams.RemoveRange(course.Exams);
+
+            foreach (var question in course.Questions)
+            {
+                Context.Choices.RemoveRange(question.Choices);
+            }
+
+            Context.Questions.RemoveRange(course.Questions);
+
+            // Finally delete the course itself
+            Context.Courses.Remove(course);
+
+            await Context.SaveChangesAsync();
+            Snackbar.Add("Course deleted successfully", Severity.Success);
+            CloseAllDropdowns();
+            await LoadCourses();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error deleting course: {ex.Message}", Severity.Error);
+        }
     }
 
     private async Task DeleteExam(int examId, int courseId)
     {
-        var exam = await Context.Exams.FindAsync(examId);
-        if (exam != null && exam.CourseId == courseId)
+        try
         {
+            // Load exam with all related data
+            var exam = await Context.Exams
+                .Include(e => e.ExamQuestions)
+                .Include(e => e.StudentExams) // Include StudentExams
+                .FirstOrDefaultAsync(e => e.Id == examId && e.CourseId == courseId);
+
+            if (exam == null) return;
+
+            // Confirmation dialog
+            bool? result = await DialogService.ShowMessageBox(
+                "Confirm Delete",
+                "Are you sure you want to delete this exam and all its related data?",
+                yesText: "Delete",
+                cancelText: "Cancel");
+
+            if (result != true) return;
+
+            // Delete in proper order:
+
+            // 1. First delete exam questions
+            Context.ExamQuestions.RemoveRange(exam.ExamQuestions);
+
+            // 2. Then delete student exam records
+            Context.StudentExams.RemoveRange(exam.StudentExams);
+
+            // 3. Finally delete the exam itself
             Context.Exams.Remove(exam);
+
             await Context.SaveChangesAsync();
+            CloseAllDropdowns();
+
+            Snackbar.Add("Exam deleted successfully", Severity.Success);
+
+            // Update the UI
             var course = await Context.Courses
                 .Include(c => c.Exams)
                 .FirstOrDefaultAsync(c => c.Id == courseId);
+
             if (course != null)
             {
                 var index = Courses.FindIndex(c => c.Id == courseId);
@@ -720,10 +824,20 @@
                 }
             }
         }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error deleting exam: {ex.Message}", Severity.Error);
+        }
+    }
+    private void EditCourse(int courseId)
+    {
+        NavigationManager.NavigateTo($"/edit-course/{courseId}");
+        CloseAllDropdowns();
     }
 
     private void EditExam(int examId)
     {
         NavigationManager.NavigateTo($"/edit-exam/{examId}");
     }
+    
 }

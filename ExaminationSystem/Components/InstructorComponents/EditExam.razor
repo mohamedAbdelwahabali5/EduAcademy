@@ -382,6 +382,8 @@ else
         if (exam == null || exam.Course.InstructorId != CurrentUser.Id)
         {
             examExists = false;
+            Snackbar.Add("Exam not found", Severity.Error);
+            return;
         }
         else
         {
@@ -420,7 +422,8 @@ else
                     .Where(q => q.IsSelected)
                     .Select(q => new ExamQuestion { QuestionId = q.Id, ExamId = ExamId }));
                 await Context.SaveChangesAsync();
-                NavigationManager.NavigateTo("/create-exam");
+                Snackbar.Add("Exam updated successfully", Severity.Success);
+                NavigationManager.NavigateTo("/manage-courses");
             }
         }
     }

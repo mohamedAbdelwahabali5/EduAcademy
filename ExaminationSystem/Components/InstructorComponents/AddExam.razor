@@ -322,6 +322,8 @@ else
         {
             Context.Exams.Add(Exam);
             await Context.SaveChangesAsync();
+            Snackbar.Add("Exam added successful", Severity.Success);
+
             NavigationManager.NavigateTo("/manage-courses");
         }
     }
