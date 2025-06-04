@@ -276,7 +276,7 @@
     {
         Course.InstructorId = CurrentUser.Id;
         Course.CreatedAt = DateTime.Now; // Ensure CreatedAt is set
-        Context.Courses.Add(Course);
+        await Context.Courses.AddAsync(Course);
         await Context.SaveChangesAsync();
         Snackbar.Add("Course added successful", Severity.Success);
         Course = new Course(); 

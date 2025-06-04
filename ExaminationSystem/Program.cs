@@ -35,6 +35,8 @@ namespace ExaminationSystem
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseSqlServer(connectionString));
 
+            builder.Services.AddQuickGridEntityFrameworkAdapter();
+
             builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
             builder.Services.AddIdentityCore<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = false)
@@ -51,11 +53,15 @@ namespace ExaminationSystem
             });
 
             builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
-            builder.Services.AddHttpContextAccessor(); // لاستخدام IHttpContextAccessor
+            builder.Services.AddHttpContextAccessor(); 
 
             // Add MudBlazor services.
             builder.Services.AddMudServices();
 
+            builder.Services.AddServerSideBlazor(options =>
+            {
+                options.DetailedErrors = true;
+            });
             var app = builder.Build();
 
             // Initialize roles during startup
@@ -91,6 +97,7 @@ namespace ExaminationSystem
             {
                 app.UseExceptionHandler("/Error");
                 app.UseHsts();
+    app.UseMigrationsEndPoint();
             }
 
             app.UseHttpsRedirection();

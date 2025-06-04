@@ -320,7 +320,7 @@ else
     {
         if (courseExists)
         {
-            Context.Exams.Add(Exam);
+            await Context.Exams.AddAsync(Exam);
             await Context.SaveChangesAsync();
             Snackbar.Add("Exam added successful", Severity.Success);
 

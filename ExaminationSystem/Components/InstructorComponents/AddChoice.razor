@@ -24,15 +24,18 @@
     private Choice Choice = new Choice();
     private Question Question;
 
-    protected override void OnInitialized()
+    protected override async void OnInitialized()
     {
         Choice.QuestionId = QuestionId;
-        Question = Context.Questions.Find(QuestionId);
+        if (QuestionId != 0)
+        {
+            Question = await Context.Questions.FindAsync(QuestionId);
+        }
     }
 
     private async Task HandleAddChoice()
     {
-        Context.Choices.Add(Choice);
+        await Context.Choices.AddAsync(Choice);
         await Context.SaveChangesAsync();
         Choice = new Choice { QuestionId = QuestionId }; // Reset form
     }

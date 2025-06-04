@@ -473,7 +473,7 @@
                 .Select(q => new ExamQuestion { QuestionId = q.Id })
                 .ToList(),
         };
-        Context.Exams.Add(exam);
+        await Context.Exams.AddAsync(exam);
         await Context.SaveChangesAsync();
         Snackbar.Add("Exam added successful", Severity.Success);
 

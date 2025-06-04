@@ -393,7 +393,7 @@ else
                 Name = exam.Name,
                 CourseId = exam.CourseId
             };
-            var selectedQuestionIds = exam.ExamQuestions.Select(eq => eq.QuestionId).ToList();
+            var selectedQuestionIds = awexam.ExamQuestions.Select(eq => eq.QuestionId).ToList();
             Questions = await Context.Questions
                 .Where(q => q.CourseId == exam.CourseId)
                 .Select(q => new QuestionModel
