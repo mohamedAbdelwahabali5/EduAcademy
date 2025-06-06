@@ -1,42 +1,51 @@
-﻿@page "/add-choice/{QuestionId:int}"
-@attribute [Authorize(Policy = "InstructorOnly")]
-@inject ApplicationDbContext Context
+﻿m@page "/add-choice/{QuestionId:int}"  
+@attribute [Authorize(Policy = "InstructorOnly")]  
+@inject ApplicationDbContext Context  
+@inject NavigationManager NavigationManager  
 
-<h3>Add Choice for Question</h3>
-<EditForm Model="Choice" OnValidSubmit="HandleAddChoice">
-    <DataAnnotationsValidator />
-    <div>
-        <label>Choice Text:</label>
-        <InputText @bind-Value="Choice.Text" />
-        <ValidationMessage For="() => Choice.Text" />
-    </div>
-    <div>
-        <label>Is Correct:</label>
-        <InputCheckbox @bind-Value="Choice.IsCorrect" />
-    </div>
-    <button type="submit">Add Choice</button>
-</EditForm>
+<h3>Add Choice for Question</h3>  
+<EditForm Model="Choice" OnValidSubmit="HandleAddChoice">  
+    <DataAnnotationsValidator />  
+    <div>  
+        <label>Choice Text:</label>  
+        <InputText @bind-Value="Choice.Text" />  
+        <ValidationMessage For="() => Choice.Text" />  
+    </div>  
+    <div>  
+        <label>Is Correct:</label>  
+        <InputCheckbox @bind-Value="Choice.IsCorrect" />  
+    </div>  
+    <button type="submit">Add Choice</button>  
+</EditForm>  
 
-@code {
-    [Parameter]
-    public int QuestionId { get; set; }
+@code {  
+    [Parameter]  
+    public int QuestionId { get; set; }  
 
-    private Choice Choice = new Choice();
-    private Question Question;
+    private Choice Choice = new Choice();  
+    private Question? Question;  
 
-    protected override async void OnInitialized()
-    {
-        Choice.QuestionId = QuestionId;
-        if (QuestionId != 0)
-        {
-            Question = await Context.Questions.FindAsync(QuestionId);
-        }
-    }
+    protected override async Task OnInitializedAsync()  
+    {  
+        Choice.QuestionId = QuestionId;  
+        if (QuestionId != 0)  
+        {  
+            Question = await Context.Questions.FindAsync(QuestionId);  
+            if (Question == null)  
+            {  
+                NavigationManager.NavigateTo("/error");  
+            }  
+        }  
+        else  
+        {  
+            Question = new Question();  
+        }  
+    }  
 
-    private async Task HandleAddChoice()
-    {
-        await Context.Choices.AddAsync(Choice);
-        await Context.SaveChangesAsync();
-        Choice = new Choice { QuestionId = QuestionId }; // Reset form
-    }
+    private async Task HandleAddChoice()  
+    {  
+        await Context.Choices.AddAsync(Choice);  
+        await Context.SaveChangesAsync();  
+        Choice = new Choice { QuestionId = QuestionId }; // Reset form  
+    }  
 }
