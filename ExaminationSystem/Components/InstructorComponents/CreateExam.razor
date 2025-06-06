@@ -473,20 +473,69 @@
                 .Select(q => new ExamQuestion { QuestionId = q.Id })
                 .ToList(),
         };
-        Context.Exams.Add(exam);
+        await Context.Exams.AddAsync(exam);
         await Context.SaveChangesAsync();
+        Snackbar.Add("Exam added successful", Severity.Success);
+
         examModel.Name = string.Empty; // Reset exam name
         await LoadQuestionsAndExams(); // Refresh exams list
     }
 
     private async Task DeleteExam(int examId)
     {
-        var exam = await Context.Exams.FindAsync(examId);
-        if (exam != null && exam.CourseId == examModel.CourseId)
+        try
         {
+            var exam = await Context.Exams
+                .Include(e => e.ExamQuestions)
+                    .ThenInclude(eq => eq.Question)
+                .FirstOrDefaultAsync(e => e.Id == examId && e.CourseId == examModel.CourseId);
+
+            if (exam == null)
+            {
+                Snackbar.Add("Exam not found", Severity.Error);
+                return;
+            }
+
+            bool? result = await DialogService.ShowMessageBox(
+                "Confirm Delete",
+                "Are you sure you want to delete this exam and all its related data?",
+                yesText: "Delete",
+                cancelText: "Cancel");
+
+            if (result != true) return;
+
+            if (exam.ExamQuestions?.Any() == true)
+            {
+                Context.ExamQuestions.RemoveRange(exam.ExamQuestions);
+            }
+
+            foreach (var eq in exam.ExamQuestions)
+            {
+                if (eq.Question != null &&
+                    !await Context.ExamQuestions.AnyAsync(x => x.QuestionId == eq.QuestionId && x.ExamId != examId))
+                {
+                    var choices = await Context.Choices
+                        .Where(c => c.QuestionId == eq.QuestionId)
+                        .ToListAsync();
+
+                    if (choices.Any())
+                    {
+                        Context.Choices.RemoveRange(choices);
+                    }
+
+                    Context.Questions.Remove(eq.Question);
+                }
+            }
+
             Context.Exams.Remove(exam);
+
             await Context.SaveChangesAsync();
+            Snackbar.Add("Exam deleted successfully", Severity.Success);
             await LoadQuestionsAndExams();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error deleting exam: {ex.Message}", Severity.Error);
         }
     }
 

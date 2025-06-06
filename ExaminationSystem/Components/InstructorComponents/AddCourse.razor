@@ -269,15 +269,27 @@
 
     protected override async Task OnInitializedAsync()
     {
-        CurrentUser = await UserManager.GetUserAsync(HttpContextAccessor.HttpContext.User);
+        if (HttpContextAccessor.HttpContext?.User?.Identity?.IsAuthenticated == true)
+        {
+            CurrentUser = await UserManager.GetUserAsync(HttpContextAccessor.HttpContext.User);
+            if (CurrentUser == null)
+            {
+                NavigationManager.NavigateTo("/login");
+            }
+        }
+        else
+        {
+            NavigationManager.NavigateTo("/login");
+        }
     }
 
     private async Task HandleAddCourse()
     {
         Course.InstructorId = CurrentUser.Id;
         Course.CreatedAt = DateTime.Now; // Ensure CreatedAt is set
-        Context.Courses.Add(Course);
+        await Context.Courses.AddAsync(Course);
         await Context.SaveChangesAsync();
+        Snackbar.Add("Course added successful", Severity.Success);
         Course = new Course(); 
         NavigationManager.NavigateTo("/manage-courses");
     }

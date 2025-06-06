@@ -337,6 +337,8 @@ else
         {
             Context.Courses.Update(Course);
             await Context.SaveChangesAsync();
+            Snackbar.Add("Course edit successful", Severity.Success);
+
             NavigationManager.NavigateTo("/manage-courses");
         }
     }

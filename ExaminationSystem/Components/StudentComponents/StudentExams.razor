@@ -72,7 +72,6 @@
 
 <style>
     .student-exams-container {
-        min-height: 100vh;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -297,6 +296,11 @@
     protected override async Task OnInitializedAsync()
     {
         CurrentUser = await UserManager.GetUserAsync(HttpContextAccessor.HttpContext.User);
+        if (CurrentUser == null)
+        {
+            NavigationManager.NavigateTo("/Account/Login");
+            return;
+        }
         var enrolledCourseIds = await Context.StudentCourses
             .Where(sc => sc.StudentId == CurrentUser.Id)
             .Select(sc => sc.CourseId)

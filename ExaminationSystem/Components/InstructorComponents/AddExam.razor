@@ -1,14 +1,14 @@
-﻿@page "/add-exam/{courseId:int}"
-
+﻿@page "/add-exam/{CourseId:int}"
 @attribute [Authorize(Policy = "InstructorOnly")]
 @inject UserManager<ApplicationUser> UserManager
 @inject IHttpContextAccessor HttpContextAccessor
 @inject ApplicationDbContext Context
 @inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
 
 <PageTitle>Add Exam</PageTitle>
 
-@if (Course == null)
+@if (Course == null && courseExists)
 {
     <div class="loading-message">
         <p>Loading course details...</p>
@@ -30,7 +30,7 @@ else
         <div class="add-exam-card">
             <div class="add-exam-header">
                 <h3 class="add-exam-title">Add New Exam</h3>
-                <p class="add-exam-subtitle">Create a new exam for course: @Course.Name</p>
+                <p class="add-exam-subtitle">Create a new exam for course: @(Course?.Name ?? "Unknown")</p>
             </div>
 
             <EditForm Model="Exam" OnValidSubmit="HandleAddExam" class="add-exam-form">
@@ -103,12 +103,11 @@ else
     .add-exam-title {
         font-size: 32px;
         font-weight: 700;
-        color: #2d3748;
         margin: 0 0 10px 0;
         background: linear-gradient(135deg, #667eea, #764ba2);
         -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
         background-clip: text;
+        -webkit-text-fill-color: transparent; /* إصلاح الـ CSS */
     }
 
     .add-exam-subtitle {
@@ -297,15 +296,26 @@ else
     public int CourseId { get; set; }
 
     private Exam Exam = new Exam();
-    private Course Course;
-    private ApplicationUser CurrentUser;
+    private Course? Course;
+    private ApplicationUser? CurrentUser;
     private bool courseExists = true;
 
     protected override async Task OnInitializedAsync()
     {
-        CurrentUser = await UserManager.GetUserAsync(HttpContextAccessor.HttpContext.User);
-        Course = await Context.Courses.FindAsync(CourseId);
+        if (HttpContextAccessor.HttpContext?.User?.Identity?.IsAuthenticated != true)
+        {
+            NavigationManager.NavigateTo("/login");
+            return;
+        }
 
+        CurrentUser = await UserManager.GetUserAsync(HttpContextAccessor.HttpContext.User);
+        if (CurrentUser == null)
+        {
+            NavigationManager.NavigateTo("/login");
+            return;
+        }
+
+        Course = await Context.Courses.FindAsync(CourseId);
         if (Course == null || Course.InstructorId != CurrentUser.Id)
         {
             courseExists = false;
@@ -318,11 +328,22 @@ else
 
     private async Task HandleAddExam()
     {
-        if (courseExists)
+        if (!courseExists)
         {
-            Context.Exams.Add(Exam);
-            await Context.SaveChangesAsync();
             NavigationManager.NavigateTo("/manage-courses");
+            return;
         }
+
+        if (Exam == null)
+        {
+            Snackbar.Add("Invalid exam data", Severity.Error);
+            return;
+        }
+
+        Exam.CourseId = CourseId;
+        await Context.Exams.AddAsync(Exam);
+        await Context.SaveChangesAsync();
+        Snackbar.Add("Exam added successfully", Severity.Success);
+        NavigationManager.NavigateTo("/manage-courses");
     }
 }

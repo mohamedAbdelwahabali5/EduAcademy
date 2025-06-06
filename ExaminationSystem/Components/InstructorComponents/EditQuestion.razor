@@ -528,6 +528,8 @@ else
                         QuestionId = QuestionId
                     }));
                 await Context.SaveChangesAsync();
+                Snackbar.Add("Question updated successful", Severity.Success);
+
                 NavigationManager.NavigateTo("/manage-questions");
             }
         }

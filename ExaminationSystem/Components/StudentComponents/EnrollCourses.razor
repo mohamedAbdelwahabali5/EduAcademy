@@ -290,6 +290,7 @@
 
         Context.StudentCourses.AddRange(newEnrollments);
         await Context.SaveChangesAsync();
+        Snackbar.Add("Course enrolled successful", Severity.Success);
         NavigationManager.NavigateTo("/student-dashboard");
     }
 }

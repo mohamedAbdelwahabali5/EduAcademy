@@ -3,8 +3,11 @@
 @inject NavigationManager NavigationManager
 
 <div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">ExaminationSystem</a>
+    <div class="d-flex">
+        <a class="navbar-brand" href="/">
+            <img src="https://res.cloudinary.com/dojq1nxqw/image/upload/v1748893939/eduacademy_cpyjcb.png" alt="Logo" width="40" height="40" style="border-radius: 50%;" class="me-1">
+            EduAcademy
+        </a>
     </div>
 </div>
 
@@ -25,74 +28,70 @@
             </NavLink>
         </div> *@
 
-
+        
       
 
         <AuthorizeView Roles="Instructor">
             <Authorized>
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="add-course">
-                        <span class="bi bi-book"></span>
+                        <i class="bi bi-plus-square"></i>
                         Add New Course
                     </NavLink>
                 </div>
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="manage-courses">
-                        <span class="bi bi-file"></span>
+                        <i class="bi bi-folder2-open"></i> 
                         Manage Courses
                     </NavLink>
                 </div>
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="create-exam">
-                        <span class="bi bi-plus"></span>
+                        <i class="bi bi-file-earmark-plus"></i> 
                         Create Exam
                     </NavLink>
                 </div>
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="add-question">
-                        <span class="bi bi-question-circle"></span>
+                        <i class="bi bi-question-circle"></i> 
                         Add Questions
                     </NavLink>
                 </div>
             </Authorized>
         </AuthorizeView>
 
-        
+
+
 
         <AuthorizeView Roles="Student">
             <Authorized>
                 <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="student-exams">
-                        <span class="bi bi-file"></span>
-                        View Exams
-                    </NavLink>
-                </div>
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="take-exam">
-                        <span class="bi bi-pencil-square"></span>
-                        Take Exam
+                    <NavLink class="nav-link" href="student-dashboard">
+                        <i class="bi bi-speedometer2"></i> 
+                        Dashboard
                     </NavLink>
                 </div>
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="enroll-courses">
-                        <span class="bi bi-plus"></span>
+                        <i class="bi bi-journal-plus"></i> 
                         Enroll in Courses
                     </NavLink>
                 </div>
                 <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="student-dashboard">
-                        <span class="bi bi-speedometer2"></span>
-                        Dashboard
+                    <NavLink class="nav-link" href="student-exams">
+                        <i class="bi bi-file-earmark-text"></i> 
+                        View Exams
                     </NavLink>
                 </div>
             </Authorized>
         </AuthorizeView>
 
+
         <AuthorizeView>
             <Authorized>
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="Account/Manage">
-                        <span class="bi bi-person-fill-nav-menu" aria-hidden="true"></span> @context.User.Identity?.Name
+                        <span class="bi bi-person-fill-nav-menu" aria-hidden="true"></span> Profile
                     </NavLink>
                 </div>
                 <div class="nav-item px-3">
@@ -118,9 +117,31 @@
                 </div>
             </NotAuthorized>
         </AuthorizeView>
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="/about">
+                <span class="bi bi-info-circle" aria-hidden="true"></span> About
+            </NavLink>
+        </div>
     </nav>
 </div>
 
+
+<style>
+    /* .nav-link i {
+        font-size: 1.5rem; 
+        text-align: center;
+    } */
+    .bi{
+        font-size: 1.5rem;
+        vertical-align: auto !important;
+    }
+
+    .nav-item .nav-link {
+        line-height: 1rem !important;
+    }
+    
+</style>
 @code {
     private string? currentUrl;
 
